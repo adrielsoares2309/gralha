@@ -7,15 +7,13 @@ def buscar_musica(nome):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT artista, album, tablatura, caminho_audio, caminho_partitura
+        SELECT artista, album, ano, tablatura, caminho_audio, caminho_partitura
         FROM musicas
         WHERE nome LIKE ?
     """, (f"%{nome}%",))
 
     resultado = cursor.fetchone()
-
     conn.close()
-
     return resultado
 
 
@@ -25,44 +23,42 @@ def buscar_musica_completa(nome):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT id, nome, artista, album, tablatura, caminho_audio, caminho_partitura
+        SELECT id, nome, artista, album, ano, tablatura, caminho_audio, caminho_partitura
         FROM musicas
         WHERE nome LIKE ?
     """, (f"%{nome}%",))
 
     resultado = cursor.fetchone()
-
     conn.close()
-
     return resultado
 
 
-def add_musica(nome, artista, album, tablatura, audio, partitura):
+def add_musica(nome, artista, album, ano, tablatura, audio, partitura):
 
     conn = sqlite3.connect("database/musicas.db")
     cursor = conn.cursor()
 
     cursor.execute("""
         INSERT INTO musicas
-        (nome, artista, album, tablatura, caminho_audio, caminho_partitura)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (nome, artista, album, tablatura, audio, partitura))
+        (nome, artista, album, ano, tablatura, caminho_audio, caminho_partitura)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (nome, artista, album, ano, tablatura, audio, partitura))
 
     conn.commit()
     conn.close()
 
 
-def editar_musica(id, nome, artista, album, tablatura, audio, partitura):
+def editar_musica(id, nome, artista, album, ano, tablatura, audio, partitura):
 
     conn = sqlite3.connect("database/musicas.db")
     cursor = conn.cursor()
 
     cursor.execute("""
         UPDATE musicas
-        SET nome = ?, artista = ?, album = ?, tablatura = ?,
+        SET nome = ?, artista = ?, album = ?, ano = ?, tablatura = ?,
             caminho_audio = ?, caminho_partitura = ?
         WHERE id = ?
-    """, (nome, artista, album, tablatura, audio, partitura, id))
+    """, (nome, artista, album, ano, tablatura, audio, partitura, id))
 
     conn.commit()
     conn.close()

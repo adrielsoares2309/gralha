@@ -3,12 +3,12 @@ from tkinter import filedialog, messagebox
 from services.music_service import add_musica
 import os
 
-BG        = "#0a0a0a"
-BG2       = "#141414"
-BG3       = "#1e1e1e"
-VERMELHO  = "#cc0000"
-VERM_HOV  = "#ff1a1a"
-BRANCO    = "#f0f0f0"
+BG        = "#000000"
+BG2       = "#111111"
+BG3       = "#222222"
+DESTAQUE  = "#ffffff"
+DEST_HOV  = "#cccccc"
+BRANCO    = "#ffffff"
 CINZA     = "#888888"
 FONTE     = ("Courier New", 10)
 FONTE_T   = ("Courier New", 11, "bold")
@@ -18,16 +18,20 @@ caminho_audio     = ""
 caminho_partitura = ""
 
 
-def estilo_botao(btn, cor=VERMELHO, hover=VERM_HOV):
-    btn.config(bg=cor, fg=BRANCO, relief="flat",
-               activebackground=hover, activeforeground=BRANCO,
+def estilo_botao(btn, cor=DESTAQUE, hover=DEST_HOV):
+    btn.config(bg=cor, fg=BG, relief="flat",
+               activebackground=hover, activeforeground=BG,
                cursor="hand2", font=FONTE_T, bd=0, padx=10, pady=6)
     btn.bind("<Enter>", lambda e: btn.config(bg=hover))
     btn.bind("<Leave>", lambda e: btn.config(bg=cor))
 
 
 def estilo_botao_secundario(btn):
-    estilo_botao(btn, cor=BG3, hover="#2a2a2a")
+    btn.config(bg=BG3, fg=BRANCO, relief="flat",
+               activebackground="#333333", activeforeground=BRANCO,
+               cursor="hand2", font=FONTE_T, bd=0, padx=10, pady=6)
+    btn.bind("<Enter>", lambda e: btn.config(bg="#333333"))
+    btn.bind("<Leave>", lambda e: btn.config(bg=BG3))
 
 
 def estilo_entrada(entry):
@@ -92,7 +96,6 @@ def abrir_janela_adicionar():
         messagebox.showinfo("Sucesso", f'"{nome}" salva com sucesso!')
         janela.destroy()
 
-    # ── Janela ──────────────────────────────────────────
     janela = tk.Toplevel()
     janela.title("Adicionar Música")
     janela.geometry("420x700")
@@ -101,7 +104,7 @@ def abrir_janela_adicionar():
     janela.grab_set()
     janela.focus_force()
 
-    tk.Label(janela, text="ADICIONAR MÚSICA", bg=BG, fg=VERMELHO,
+    tk.Label(janela, text="ADICIONAR MÚSICA", bg=BG, fg=BRANCO,
              font=FONTE_TIT).pack(pady=(24, 2))
     tk.Label(janela, text="─" * 36, bg=BG, fg=BG3).pack(pady=(0, 8))
 

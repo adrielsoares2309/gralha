@@ -4,14 +4,15 @@ from services.music_service import buscar_musica_completa
 from interface.add_music_window import abrir_janela_adicionar
 from interface.edit_music_window import abrir_janela_editar
 
-# ── Paleta ──────────────────────────────────────────────
-BG        = "#0a0a0a"
-BG2       = "#141414"
-BG3       = "#1e1e1e"
-VERMELHO  = "#cc0000"
-VERM_HOV  = "#ff1a1a"
-BRANCO    = "#f0f0f0"
+# ── Paleta Preto e Branco ────────────────────────────────
+BG        = "#000000"
+BG2       = "#111111"
+BG3       = "#222222"
+DESTAQUE  = "#ffffff"
+DEST_HOV  = "#cccccc"
+BRANCO    = "#ffffff"
 CINZA     = "#888888"
+CINZA2    = "#555555"
 FONTE     = ("Courier New", 10)
 FONTE_T   = ("Courier New", 11, "bold")
 FONTE_TIT = ("Courier New", 16, "bold")
@@ -22,16 +23,20 @@ partitura    = ""
 musica_atual = None
 
 
-def estilo_botao(btn, cor=VERMELHO, hover=VERM_HOV):
-    btn.config(bg=cor, fg=BRANCO, relief="flat",
-               activebackground=hover, activeforeground=BRANCO,
+def estilo_botao(btn, cor=DESTAQUE, hover=DEST_HOV):
+    btn.config(bg=cor, fg=BG, relief="flat",
+               activebackground=hover, activeforeground=BG,
                cursor="hand2", font=FONTE_T, bd=0, padx=12, pady=6)
     btn.bind("<Enter>", lambda e: btn.config(bg=hover))
     btn.bind("<Leave>", lambda e: btn.config(bg=cor))
 
 
 def estilo_botao_secundario(btn):
-    estilo_botao(btn, cor=BG3, hover="#2a2a2a")
+    btn.config(bg=BG3, fg=BRANCO, relief="flat",
+               activebackground="#333333", activeforeground=BRANCO,
+               cursor="hand2", font=FONTE_T, bd=0, padx=12, pady=6)
+    btn.bind("<Enter>", lambda e: btn.config(bg="#333333"))
+    btn.bind("<Leave>", lambda e: btn.config(bg=BG3))
 
 
 def iniciar_interface():
@@ -44,19 +49,17 @@ def iniciar_interface():
         nome = entrada.get()
         resultado = buscar_musica_completa(nome)
 
-        # Limpa resultado anterior
         for widget in frame_resultado.winfo_children():
             widget.destroy()
 
         if resultado:
             musica_atual = resultado
-            # (id, nome, artista, album, ano, tablatura, audio, partitura)
             _, nome_r, artista, album, ano, tablatura, audio, partitura = resultado
 
             def info_linha(icone, label, valor):
                 f = tk.Frame(frame_resultado, bg=BG2)
                 f.pack(fill="x", padx=16, pady=2)
-                tk.Label(f, text=icone, bg=BG2, fg=VERMELHO,
+                tk.Label(f, text=icone, bg=BG2, fg=BRANCO,
                          font=FONTE_T, width=2).pack(side="left")
                 tk.Label(f, text=label, bg=BG2, fg=CINZA,
                          font=("Courier New", 9)).pack(side="left", padx=(4, 8))
@@ -64,13 +67,11 @@ def iniciar_interface():
                          font=FONTE_T, anchor="w").pack(side="left", fill="x", expand=True)
 
             tk.Label(frame_resultado, text="─" * 34, bg=BG2, fg=BG3).pack(pady=(10, 6))
-
             info_linha("♪", "NOME",    nome_r)
             info_linha("★", "ARTISTA", artista)
             info_linha("◈", "ÁLBUM",   album)
             info_linha("◷", "ANO",     str(ano) if ano else "—")
 
-            # Tablatura
             if tablatura:
                 tk.Label(frame_resultado, text="TABLATURA", bg=BG2, fg=CINZA,
                          font=("Courier New", 8, "bold")).pack(anchor="w", padx=16, pady=(10, 2))
@@ -81,20 +82,16 @@ def iniciar_interface():
                 txt.config(state="disabled")
                 txt.pack(padx=16, fill="x", pady=(0, 4))
 
-            # Áudio
             if audio:
                 tk.Label(frame_resultado, text="ÁUDIO", bg=BG2, fg=CINZA,
                          font=("Courier New", 8, "bold")).pack(anchor="w", padx=16, pady=(6, 2))
-                tk.Label(frame_resultado,
-                         text=f"▶  {os.path.basename(audio)}",
+                tk.Label(frame_resultado, text=f"▶  {os.path.basename(audio)}",
                          bg=BG2, fg=BRANCO, font=FONTE).pack(anchor="w", padx=16)
 
-            # Partitura
             if partitura:
                 tk.Label(frame_resultado, text="PARTITURA", bg=BG2, fg=CINZA,
                          font=("Courier New", 8, "bold")).pack(anchor="w", padx=16, pady=(6, 2))
-                tk.Label(frame_resultado,
-                         text=f"◉  {os.path.basename(partitura)}",
+                tk.Label(frame_resultado, text=f"◉  {os.path.basename(partitura)}",
                          bg=BG2, fg=BRANCO, font=FONTE).pack(anchor="w", padx=16)
 
             tk.Label(frame_resultado, text="─" * 34, bg=BG2, fg=BG3).pack(pady=(10, 10))
@@ -105,7 +102,6 @@ def iniciar_interface():
             tk.Label(frame_resultado, text="Música não encontrada",
                      bg=BG, fg=CINZA, font=FONTE).pack(pady=10)
 
-        # Atualiza scroll após popular resultado
         canvas.update_idletasks()
         canvas.configure(scrollregion=canvas.bbox("all"))
 
@@ -118,7 +114,7 @@ def iniciar_interface():
         jan.configure(bg=BG)
         jan.grab_set()
 
-        tk.Label(jan, text="── TABLATURA ──", bg=BG, fg=VERMELHO,
+        tk.Label(jan, text="── TABLATURA ──", bg=BG, fg=BRANCO,
                  font=FONTE_TIT).pack(pady=(16, 8))
 
         frame = tk.Frame(jan, bg=BG2)
@@ -148,18 +144,16 @@ def iniciar_interface():
             return
         abrir_janela_editar(musica_atual, ao_salvar=buscar)
 
-    # ── Janela principal ────────────────────────────────
+    # ── Janela principal ─────────────────────────────────
     janela = tk.Tk()
     janela.title("Guitar Library")
     janela.geometry("440x620")
     janela.configure(bg=BG)
     janela.resizable(False, True)
 
-    # ── Canvas + Scroll ──────────────────────────────────
     canvas = tk.Canvas(janela, bg=BG, highlightthickness=0)
     scrollbar = tk.Scrollbar(janela, orient="vertical", command=canvas.yview)
     canvas.configure(yscrollcommand=scrollbar.set)
-
     scrollbar.pack(side="right", fill="y")
     canvas.pack(side="left", fill="both", expand=True)
 
@@ -174,15 +168,13 @@ def iniciar_interface():
     canvas.bind("<Configure>", lambda e: canvas.itemconfig(frame_id, width=e.width))
     canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
 
-    # ── Cabeçalho ────────────────────────────────────────
-    tk.Label(frame_main, text="GUITAR LIBRARY", bg=BG, fg=VERMELHO,
+    tk.Label(frame_main, text="GUITAR LIBRARY", bg=BG, fg=BRANCO,
              font=("Courier New", 20, "bold")).pack(pady=(28, 2))
     tk.Label(frame_main, text="─" * 36, bg=BG, fg=BG3).pack()
 
     tk.Label(frame_main, text="BUSCAR MÚSICA", bg=BG, fg=CINZA,
              font=("Courier New", 8, "bold")).pack(pady=(20, 4))
 
-    # ── Barra de busca ───────────────────────────────────
     frame_busca = tk.Frame(frame_main, bg=BG2)
     frame_busca.pack(padx=40, fill="x")
 
@@ -195,14 +187,11 @@ def iniciar_interface():
     estilo_botao(btn_buscar)
     btn_buscar.pack(side="right", padx=6, pady=6)
 
-    # ── Card de resultado ────────────────────────────────
     frame_resultado = tk.Frame(frame_main, bg=BG2)
     frame_resultado.pack(padx=40, pady=(10, 0), fill="x")
 
-    # ── Separador ────────────────────────────────────────
     tk.Label(frame_main, text="─" * 36, bg=BG, fg=BG3).pack(pady=(16, 12))
 
-    # ── Botões de ação ───────────────────────────────────
     def btn(texto, cmd, secundario=False):
         b = tk.Button(frame_main, text=texto, command=cmd)
         if secundario:

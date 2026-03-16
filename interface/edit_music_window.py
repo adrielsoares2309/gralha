@@ -3,38 +3,39 @@ from tkinter import filedialog, messagebox
 from services.music_service import editar_musica, excluir_musica
 import os
 
-BG        = "#0a0a0a"
-BG2       = "#141414"
-BG3       = "#1e1e1e"
-VERMELHO  = "#cc0000"
-VERM_HOV  = "#ff1a1a"
-BRANCO    = "#f0f0f0"
+BG        = "#000000"
+BG2       = "#111111"
+BG3       = "#222222"
+DESTAQUE  = "#ffffff"
+DEST_HOV  = "#cccccc"
+BRANCO    = "#ffffff"
 CINZA     = "#888888"
+PERIGO    = "#555555"
+PERIGO_HOV = "#333333"
 FONTE     = ("Courier New", 10)
 FONTE_T   = ("Courier New", 11, "bold")
 FONTE_TIT = ("Courier New", 16, "bold")
 
 
-def estilo_botao(btn, cor=VERMELHO, hover=VERM_HOV):
-    btn.config(bg=cor, fg=BRANCO, relief="flat",
-               activebackground=hover, activeforeground=BRANCO,
+def estilo_botao(btn, cor=DESTAQUE, hover=DEST_HOV):
+    btn.config(bg=cor, fg=BG, relief="flat",
+               activebackground=hover, activeforeground=BG,
                cursor="hand2", font=FONTE_T, bd=0, padx=10, pady=6)
     btn.bind("<Enter>", lambda e: btn.config(bg=hover))
     btn.bind("<Leave>", lambda e: btn.config(bg=cor))
 
 
 def estilo_botao_secundario(btn):
-    estilo_botao(btn, cor=BG3, hover="#2a2a2a")
+    btn.config(bg=BG3, fg=BRANCO, relief="flat",
+               activebackground="#333333", activeforeground=BRANCO,
+               cursor="hand2", font=FONTE_T, bd=0, padx=10, pady=6)
+    btn.bind("<Enter>", lambda e: btn.config(bg="#333333"))
+    btn.bind("<Leave>", lambda e: btn.config(bg=BG3))
 
 
 def estilo_entrada(entry):
     entry.config(bg=BG2, fg=BRANCO, insertbackground=BRANCO,
                  relief="flat", font=FONTE_T, bd=0)
-
-
-def label_campo(pai, texto):
-    tk.Label(pai, text=texto, bg=BG, fg=CINZA,
-             font=("Courier New", 8, "bold")).pack(anchor="w", padx=40, pady=(10, 2))
 
 
 def abrir_janela_editar(musica, ao_salvar=None):
@@ -88,7 +89,6 @@ def abrir_janela_editar(musica, ao_salvar=None):
 
         editar_musica(id_musica, nome, artista, album, ano, tablatura, novo_audio, nova_partitura)
         messagebox.showinfo("Sucesso", f'"{nome}" atualizada com sucesso!')
-
         if ao_salvar:
             ao_salvar()
         janela.destroy()
@@ -112,34 +112,22 @@ def abrir_janela_editar(musica, ao_salvar=None):
     janela.grab_set()
     janela.focus_force()
 
-    # Canvas + Scrollbar
     canvas = tk.Canvas(janela, bg=BG, highlightthickness=0)
     scrollbar = tk.Scrollbar(janela, orient="vertical", command=canvas.yview)
     canvas.configure(yscrollcommand=scrollbar.set)
-
     scrollbar.pack(side="right", fill="y")
     canvas.pack(side="left", fill="both", expand=True)
 
-    # Frame interno dentro do canvas
     frame = tk.Frame(canvas, bg=BG)
     frame_id = canvas.create_window((0, 0), window=frame, anchor="nw")
 
-    def atualizar_scroll(event):
+    def atualizar_scroll(event=None):
         canvas.configure(scrollregion=canvas.bbox("all"))
         canvas.itemconfig(frame_id, width=canvas.winfo_width())
 
     frame.bind("<Configure>", atualizar_scroll)
     canvas.bind("<Configure>", lambda e: canvas.itemconfig(frame_id, width=e.width))
-
-    # Scroll com mouse
-    def scroll_mouse(event):
-        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-    canvas.bind_all("<MouseWheel>", scroll_mouse)
-
-    # ── Conteúdo dentro do frame ─────────────────────────
-    tk.Label(frame, text="EDITAR MÚSICA", bg=BG, fg=VERMELHO,
-             font=FONTE_TIT).pack(pady=(24, 2))
-    tk.Label(frame, text="─" * 36, bg=BG, fg=BG3).pack(pady=(0, 8))
+    canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
 
     def lbl(texto):
         tk.Label(frame, text=texto, bg=BG, fg=CINZA,
@@ -151,6 +139,10 @@ def abrir_janela_editar(musica, ao_salvar=None):
         e.insert(0, valor)
         e.pack(padx=40, ipady=6, fill="x")
         return e
+
+    tk.Label(frame, text="EDITAR MÚSICA", bg=BG, fg=BRANCO,
+             font=FONTE_TIT).pack(pady=(24, 2))
+    tk.Label(frame, text="─" * 36, bg=BG, fg=BG3).pack(pady=(0, 8))
 
     lbl("NOME")
     entrada_nome = entrada_campo(musica[1] or "")
@@ -203,5 +195,9 @@ def abrir_janela_editar(musica, ao_salvar=None):
     btn_salvar.pack(padx=40, pady=(0, 6), fill="x")
 
     btn_excluir = tk.Button(frame, text="✖  EXCLUIR MÚSICA", command=excluir)
-    estilo_botao(btn_excluir, cor="#3a0000", hover=VERMELHO)
+    btn_excluir.config(bg=PERIGO, fg=BRANCO, relief="flat",
+                       activebackground=PERIGO_HOV, activeforeground=BRANCO,
+                       cursor="hand2", font=FONTE_T, bd=0, padx=10, pady=6)
+    btn_excluir.bind("<Enter>", lambda e: btn_excluir.config(bg=PERIGO_HOV))
+    btn_excluir.bind("<Leave>", lambda e: btn_excluir.config(bg=PERIGO))
     btn_excluir.pack(padx=40, pady=(0, 30), fill="x")

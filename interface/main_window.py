@@ -1,248 +1,336 @@
-import tkinter as tk
+import customtkinter as ctk
+from tkinter import messagebox
 import os
-from services.music_service import buscar_musica_completa
+from services.music_service import buscar_musica_completa, excluir_musica
 from interface.add_music_window import abrir_janela_adicionar
 from interface.edit_music_window import abrir_janela_editar
 
-# ── Paleta Preto e Branco ────────────────────────────────
-BG        = "#000000"
-BG2       = "#111111"
-BG3       = "#222222"
-DESTAQUE  = "#ffffff"
-DEST_HOV  = "#cccccc"
-BRANCO    = "#ffffff"
-CINZA     = "#888888"
-CINZA2    = "#555555"
-FONTE     = ("Courier New", 10)
-FONTE_T   = ("Courier New", 11, "bold")
-FONTE_TIT = ("Courier New", 16, "bold")
+# ── Tema global ──────────────────────────────────────────
+ctk.set_appearance_mode("light")
+ctk.set_default_color_theme("blue")
 
-tablatura    = ""
+VERMELHO   = "#e8514a"
+VERM_HOV   = "#c0392b"
+BRANCO     = "#ffffff"
+FUNDO      = "#f0f0eb"
+CARD_BG    = "#ffffff"
+SIDEBAR_BG = "#ffffff"
+TEXTO      = "#1a1a1a"
+SUBTEXTO   = "#666666"
+CINZA_BD   = "#e0e0e0"
+
 cifra        = ""
+tablatura    = ""
 audio        = ""
 partitura    = ""
 musica_atual = None
 
 
-def estilo_botao(btn, cor=DESTAQUE, hover=DEST_HOV):
-    btn.config(bg=cor, fg=BG, relief="flat",
-               activebackground=hover, activeforeground=BG,
-               cursor="hand2", font=FONTE_T, bd=0, padx=12, pady=6)
-    btn.bind("<Enter>", lambda e: btn.config(bg=hover))
-    btn.bind("<Leave>", lambda e: btn.config(bg=cor))
-
-
-def estilo_botao_secundario(btn):
-    btn.config(bg=BG3, fg=BRANCO, relief="flat",
-               activebackground="#333333", activeforeground=BRANCO,
-               cursor="hand2", font=FONTE_T, bd=0, padx=12, pady=6)
-    btn.bind("<Enter>", lambda e: btn.config(bg="#333333"))
-    btn.bind("<Leave>", lambda e: btn.config(bg=BG3))
-
-
 def iniciar_interface():
 
-    global tablatura, audio, partitura, musica_atual
+    global cifra, tablatura, audio, partitura, musica_atual
 
-    def buscar():
-        global tablatura, cifra, audio, partitura, musica_atual
+    # ════════════════════════════════════════════════════
+    # JANELA PRINCIPAL
+    # ════════════════════════════════════════════════════
+    janela = ctk.CTk()
+    janela.title("Guitar Library")
+    janela.geometry("680x560")
+    janela.configure(fg_color=FUNDO)
+    janela.resizable(True, True)
 
-        nome = entrada.get()
-        resultado = buscar_musica_completa(nome)
+    sidebar_visivel = False
 
-        for widget in frame_resultado.winfo_children():
-            widget.destroy()
+    # ════════════════════════════════════════════════════
+    # SIDEBAR
+    # ════════════════════════════════════════════════════
+    def criar_sidebar():
+        sidebar = ctk.CTkFrame(
+            janela, width=170, corner_radius=0,
+            fg_color=SIDEBAR_BG,
+            border_width=1, border_color=CINZA_BD
+        )
 
-        if resultado:
-            musica_atual = resultado
-            _, nome_r, artista, album, ano, cifra, tablatura, audio, partitura = resultado
+        ctk.CTkLabel(
+            sidebar, text="MENU",
+            font=ctk.CTkFont("Segoe UI", 11, "bold"),
+            text_color=SUBTEXTO
+        ).pack(pady=(28, 16), padx=20, anchor="w")
 
-            def info_linha(icone, label, valor):
-                f = tk.Frame(frame_resultado, bg=BG2)
-                f.pack(fill="x", padx=16, pady=2)
-                tk.Label(f, text=icone, bg=BG2, fg=BRANCO,
-                         font=FONTE_T, width=2).pack(side="left")
-                tk.Label(f, text=label, bg=BG2, fg=CINZA,
-                         font=("Courier New", 9)).pack(side="left", padx=(4, 8))
-                tk.Label(f, text=valor or "—", bg=BG2, fg=BRANCO,
-                         font=FONTE_T, anchor="w").pack(side="left", fill="x", expand=True)
+        def btn_sidebar(icone, texto, comando):
+            ctk.CTkButton(
+                sidebar,
+                text=f"  {icone}   {texto}",
+                command=comando,
+                fg_color=VERMELHO, hover_color=VERM_HOV,
+                text_color=BRANCO,
+                font=ctk.CTkFont("Segoe UI", 12, "bold"),
+                corner_radius=10,
+                height=42,
+                anchor="w"
+            ).pack(fill="x", padx=12, pady=5)
 
-            tk.Label(frame_resultado, text="─" * 34, bg=BG2, fg=BG3).pack(pady=(10, 6))
-            info_linha("♪", "NOME",    nome_r)
-            info_linha("★", "ARTISTA", artista)
-            info_linha("◈", "ÁLBUM",   album)
-            info_linha("◷", "ANO",     str(ano) if ano else "—")
+        btn_sidebar("+",  "ADICIONAR", lambda: abrir_janela_adicionar())
+        btn_sidebar("✏", "EDITAR",    lambda: editar())
+        btn_sidebar("🗑", "EXCLUIR",   lambda: excluir())
 
-            if cifra:
-                tk.Label(frame_resultado, text="CIFRA", bg=BG2, fg=CINZA,
-                         font=("Courier New", 8, "bold")).pack(anchor="w", padx=16, pady=(10, 2))
-                txt_cifra = tk.Text(frame_resultado, height=6, font=("Courier New", 10),
-                              bg=BG3, fg=BRANCO, relief="flat", bd=0,
-                              padx=10, pady=8, state="normal")
-                txt_cifra.insert("1.0", cifra)
-                txt_cifra.config(state="disabled")
-                txt_cifra.pack(padx=16, fill="x", pady=(0, 4))
+        return sidebar
 
-            if tablatura:
-                tk.Label(frame_resultado, text="TABLATURA", bg=BG2, fg=CINZA,
-                         font=("Courier New", 8, "bold")).pack(anchor="w", padx=16, pady=(10, 2))
-                txt = tk.Text(frame_resultado, height=8, font=("Courier New", 10),
-                              bg=BG3, fg=BRANCO, relief="flat", bd=0,
-                              padx=10, pady=8, state="normal")
-                txt.insert("1.0", tablatura)
-                txt.config(state="disabled")
-                txt.pack(padx=16, fill="x", pady=(0, 4))
+    sidebar_frame = criar_sidebar()
 
-            if audio:
-                tk.Label(frame_resultado, text="ÁUDIO", bg=BG2, fg=CINZA,
-                         font=("Courier New", 8, "bold")).pack(anchor="w", padx=16, pady=(6, 2))
-                tk.Label(frame_resultado, text=f"▶  {os.path.basename(audio)}",
-                         bg=BG2, fg=BRANCO, font=FONTE).pack(anchor="w", padx=16)
+    # ════════════════════════════════════════════════════
+    # CONTEÚDO PRINCIPAL
+    # ════════════════════════════════════════════════════
+    frame_conteudo = ctk.CTkFrame(janela, fg_color=FUNDO, corner_radius=0)
+    frame_conteudo.pack(side="left", fill="both", expand=True)
 
-            if partitura:
-                tk.Label(frame_resultado, text="PARTITURA", bg=BG2, fg=CINZA,
-                         font=("Courier New", 8, "bold")).pack(anchor="w", padx=16, pady=(6, 2))
-                tk.Label(frame_resultado, text=f"◉  {os.path.basename(partitura)}",
-                         bg=BG2, fg=BRANCO, font=FONTE).pack(anchor="w", padx=16)
-
-            tk.Label(frame_resultado, text="─" * 34, bg=BG2, fg=BG3).pack(pady=(10, 10))
-
+    def toggle_sidebar():
+        nonlocal sidebar_visivel
+        if sidebar_visivel:
+            sidebar_frame.pack_forget()
+            sidebar_visivel = False
         else:
-            musica_atual = None
-            tablatura = cifra = audio = partitura = ""
-            tk.Label(frame_resultado, text="Música não encontrada",
-                     bg=BG, fg=CINZA, font=FONTE).pack(pady=10)
+            sidebar_frame.pack(side="left", fill="y", before=frame_conteudo)
+            sidebar_visivel = True
 
-        canvas.update_idletasks()
-        canvas.configure(scrollregion=canvas.bbox("all"))
+    # ── Topbar ───────────────────────────────────────────
+    topbar = ctk.CTkFrame(frame_conteudo, fg_color=FUNDO,
+                           corner_radius=0, height=64)
+    topbar.pack(fill="x")
+    topbar.pack_propagate(False)
 
-    def abrir_cifra():
-        if not cifra:
+    ctk.CTkButton(
+        topbar, text="☰",
+        command=toggle_sidebar,
+        width=44, height=44,
+        corner_radius=10,
+        fg_color=VERMELHO, hover_color=VERM_HOV,
+        text_color=BRANCO,
+        font=ctk.CTkFont("Segoe UI", 18, "bold")
+    ).pack(side="left", padx=(14, 0), pady=10)
+
+    # ── Barra de busca ───────────────────────────────────
+    frame_busca = ctk.CTkFrame(
+        topbar, fg_color=BRANCO,
+        corner_radius=25,
+        border_width=1, border_color=CINZA_BD
+    )
+    frame_busca.pack(side="left", padx=14, pady=10, fill="x", expand=True)
+
+    entrada = ctk.CTkEntry(
+        frame_busca,
+        placeholder_text="Buscar música...",
+        border_width=0,
+        fg_color=BRANCO,
+        text_color=TEXTO,
+        placeholder_text_color=SUBTEXTO,
+        font=ctk.CTkFont("Segoe UI", 12),
+        corner_radius=25,
+        height=38
+    )
+    entrada.pack(side="left", fill="x", expand=True, padx=(14, 4), pady=2)
+    entrada.bind("<Return>", lambda e: buscar())
+
+    ctk.CTkButton(
+        frame_busca, text="🔍",
+        command=lambda: buscar(),
+        width=42, height=38,
+        corner_radius=20,
+        fg_color=VERMELHO, hover_color=VERM_HOV,
+        text_color=BRANCO,
+        font=ctk.CTkFont("Segoe UI", 14)
+    ).pack(side="right", padx=4, pady=2)
+
+    # ── Área scrollável ───────────────────────────────────
+    scroll_area = ctk.CTkScrollableFrame(
+        frame_conteudo, fg_color=FUNDO,
+        corner_radius=0,
+        scrollbar_button_color=CINZA_BD,
+        scrollbar_button_hover_color=SUBTEXTO
+    )
+    scroll_area.pack(fill="both", expand=True)
+
+    card_ref = {"frame": None}
+
+    # ════════════════════════════════════════════════════
+    # AÇÕES
+    # ════════════════════════════════════════════════════
+    def editar():
+        if not musica_atual:
+            messagebox.showwarning("Atenção", "Busque uma música primeiro!")
             return
-        jan = tk.Toplevel(janela)
-        jan.title("Cifra")
-        jan.geometry("460x400")
-        jan.configure(bg=BG)
-        jan.grab_set()
+        abrir_janela_editar(musica_atual, ao_salvar=buscar)
 
-        tk.Label(jan, text="── CIFRA ──", bg=BG, fg=BRANCO,
-                 font=FONTE_TIT).pack(pady=(16, 8))
-
-        frame = tk.Frame(jan, bg=BG2)
-        frame.pack(fill="both", expand=True, padx=16, pady=(0, 16))
-
-        txt = tk.Text(frame, font=("Courier New", 12), bg=BG2, fg=BRANCO,
-                      insertbackground=BRANCO, relief="flat",
-                      state="normal", bd=0, padx=10, pady=10)
-        txt.insert("1.0", cifra)
-        txt.config(state="disabled")
-        txt.pack(fill="both", expand=True)
-
-    def abrir_tablatura():
-        if not tablatura:
+    def excluir():
+        if not musica_atual:
+            messagebox.showwarning("Atenção", "Busque uma música primeiro!")
             return
-        jan = tk.Toplevel(janela)
-        jan.title("Tablatura")
-        jan.geometry("460x340")
-        jan.configure(bg=BG)
+        nome = musica_atual[1]
+        if messagebox.askyesno("Confirmar exclusão",
+                               f'Tem certeza que deseja excluir "{nome}"?'):
+            excluir_musica(musica_atual[0])
+            messagebox.showinfo("Excluído", f'"{nome}" foi excluída.')
+            limpar_card()
+
+    def limpar_card():
+        global musica_atual, cifra, tablatura, audio, partitura
+        musica_atual = None
+        cifra = tablatura = audio = partitura = ""
+        if card_ref["frame"]:
+            card_ref["frame"].destroy()
+            card_ref["frame"] = None
+
+    def abrir_viewer(titulo, conteudo):
+        jan = ctk.CTkToplevel(janela)
+        jan.title(titulo)
+        jan.geometry("500x440")
+        jan.configure(fg_color=FUNDO)
         jan.grab_set()
+        jan.focus_force()
 
-        tk.Label(jan, text="── TABLATURA ──", bg=BG, fg=BRANCO,
-                 font=FONTE_TIT).pack(pady=(16, 8))
+        ctk.CTkLabel(
+            jan, text=f"── {titulo.upper()} ──",
+            font=ctk.CTkFont("Segoe UI", 14, "bold"),
+            text_color=TEXTO
+        ).pack(pady=(20, 10))
 
-        frame = tk.Frame(jan, bg=BG2)
-        frame.pack(fill="both", expand=True, padx=16, pady=(0, 16))
+        frame_txt = ctk.CTkFrame(jan, fg_color=BRANCO, corner_radius=12,
+                                  border_width=1, border_color=CINZA_BD)
+        frame_txt.pack(fill="both", expand=True, padx=20, pady=(0, 20))
 
-        txt = tk.Text(frame, font=("Courier New", 12), bg=BG2, fg=BRANCO,
-                      insertbackground=BRANCO, relief="flat",
-                      state="normal", bd=0, padx=10, pady=10)
-        txt.insert("1.0", tablatura)
-        txt.config(state="disabled")
-        txt.pack(fill="both", expand=True)
+        txt = ctk.CTkTextbox(
+            frame_txt,
+            font=ctk.CTkFont("Courier New", 12),
+            fg_color=BRANCO,
+            text_color=TEXTO,
+            wrap="none",
+            corner_radius=12
+        )
+        txt.pack(fill="both", expand=True, padx=4, pady=4)
+        txt.insert("1.0", conteudo)
+        txt.configure(state="disabled")
 
     def tocar_audio():
         if audio:
             caminho = os.path.join(os.path.dirname(__file__), "..", audio)
             if os.path.exists(caminho):
                 os.startfile(caminho)
+            else:
+                messagebox.showwarning("Aviso", "Arquivo de áudio não encontrado.")
 
     def visualizar_partitura():
         if partitura:
             caminho = os.path.join(os.path.dirname(__file__), "..", partitura)
             if os.path.exists(caminho):
                 os.startfile(caminho)
+            else:
+                messagebox.showwarning("Aviso", "Arquivo de partitura não encontrado.")
 
-    def editar():
-        if not musica_atual:
+    # ════════════════════════════════════════════════════
+    # BUSCA + CARD
+    # ════════════════════════════════════════════════════
+    def buscar():
+        global cifra, tablatura, audio, partitura, musica_atual
+
+        nome = entrada.get().strip()
+        if not nome:
             return
-        abrir_janela_editar(musica_atual, ao_salvar=buscar)
 
-    # ── Janela principal ─────────────────────────────────
-    janela = tk.Tk()
-    janela.title("Guitar Library")
-    janela.geometry("440x620")
-    janela.configure(bg=BG)
-    janela.resizable(False, True)
+        resultado = buscar_musica_completa(nome)
 
-    canvas = tk.Canvas(janela, bg=BG, highlightthickness=0)
-    scrollbar = tk.Scrollbar(janela, orient="vertical", command=canvas.yview)
-    canvas.configure(yscrollcommand=scrollbar.set)
-    scrollbar.pack(side="right", fill="y")
-    canvas.pack(side="left", fill="both", expand=True)
+        if card_ref["frame"]:
+            card_ref["frame"].destroy()
+            card_ref["frame"] = None
 
-    frame_main = tk.Frame(canvas, bg=BG)
-    frame_id = canvas.create_window((0, 0), window=frame_main, anchor="nw")
+        if not resultado:
+            musica_atual = None
+            cifra = tablatura = audio = partitura = ""
+            card_vazio = ctk.CTkFrame(scroll_area, fg_color=CARD_BG,
+                                       corner_radius=16,
+                                       border_width=1, border_color=CINZA_BD)
+            card_vazio.pack(padx=24, pady=20, fill="x")
+            card_ref["frame"] = card_vazio
+            ctk.CTkLabel(
+                card_vazio,
+                text="Música não encontrada.",
+                font=ctk.CTkFont("Segoe UI", 12),
+                text_color=SUBTEXTO
+            ).pack(pady=30)
+            return
 
-    def atualizar_scroll(event=None):
-        canvas.configure(scrollregion=canvas.bbox("all"))
-        canvas.itemconfig(frame_id, width=canvas.winfo_width())
+        musica_atual = resultado
+        _, nome_r, artista, album, ano, cifra, tablatura, audio, partitura = resultado
 
-    frame_main.bind("<Configure>", atualizar_scroll)
-    canvas.bind("<Configure>", lambda e: canvas.itemconfig(frame_id, width=e.width))
-    canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
+        # ── Card ──────────────────────────────────────────
+        card = ctk.CTkFrame(scroll_area, fg_color=CARD_BG,
+                             corner_radius=16,
+                             border_width=1, border_color=CINZA_BD)
+        card.pack(padx=24, pady=20, fill="x")
+        card_ref["frame"] = card
 
-    tk.Label(frame_main, text="GUITAR LIBRARY", bg=BG, fg=BRANCO,
-             font=("Courier New", 20, "bold")).pack(pady=(28, 2))
-    tk.Label(frame_main, text="─" * 36, bg=BG, fg=BG3).pack()
+        # cabeçalho
+        cab = ctk.CTkFrame(card, fg_color="transparent")
+        cab.pack(fill="x", padx=24, pady=(20, 6))
 
-    tk.Label(frame_main, text="BUSCAR MÚSICA", bg=BG, fg=CINZA,
-             font=("Courier New", 8, "bold")).pack(pady=(20, 4))
+        ctk.CTkLabel(
+            cab, text=nome_r.upper(),
+            font=ctk.CTkFont("Segoe UI", 16, "bold"),
+            text_color=TEXTO, anchor="w"
+        ).pack(anchor="w")
 
-    frame_busca = tk.Frame(frame_main, bg=BG2)
-    frame_busca.pack(padx=40, fill="x")
+        ctk.CTkLabel(
+            cab, text=artista or "—",
+            font=ctk.CTkFont("Segoe UI", 11, "bold"),
+            text_color=SUBTEXTO, anchor="w"
+        ).pack(anchor="w", pady=(2, 0))
 
-    entrada = tk.Entry(frame_busca, font=FONTE_T, bg=BG2, fg=BRANCO,
-                       insertbackground=BRANCO, relief="flat", bd=0, width=22)
-    entrada.pack(side="left", padx=(12, 0), pady=10, fill="x", expand=True)
-    entrada.bind("<Return>", lambda e: buscar())
+        partes = []
+        if album: partes.append(album)
+        if ano:   partes.append(str(ano))
+        if partes:
+            ctk.CTkLabel(
+                cab, text="  ·  ".join(partes),
+                font=ctk.CTkFont("Segoe UI", 10),
+                text_color=SUBTEXTO, anchor="w"
+            ).pack(anchor="w", pady=(2, 0))
 
-    btn_buscar = tk.Button(frame_busca, text="BUSCAR", command=buscar)
-    estilo_botao(btn_buscar)
-    btn_buscar.pack(side="right", padx=6, pady=6)
+        # separador
+        ctk.CTkFrame(card, fg_color=CINZA_BD, height=1,
+                     corner_radius=0).pack(fill="x", padx=24, pady=(12, 8))
 
-    frame_resultado = tk.Frame(frame_main, bg=BG2)
-    frame_resultado.pack(padx=40, pady=(10, 0), fill="x")
+        # botões de ação
+        frame_btns = ctk.CTkFrame(card, fg_color="transparent")
+        frame_btns.pack(fill="x", padx=24, pady=(0, 20))
 
-    tk.Label(frame_main, text="─" * 36, bg=BG, fg=BG3).pack(pady=(16, 12))
+        def btn_acao(icone, texto, cmd, ativo=True):
+            cor   = VERMELHO if ativo else "#cccccc"
+            hover = VERM_HOV if ativo else "#bbbbbb"
+            ctk.CTkButton(
+                frame_btns,
+                text=f"  {icone}   {texto}",
+                command=cmd if ativo else lambda: None,
+                fg_color=cor, hover_color=hover,
+                text_color=BRANCO,
+                font=ctk.CTkFont("Segoe UI", 11, "bold"),
+                corner_radius=10,
+                height=42,
+                anchor="w"
+            ).pack(fill="x", pady=4)
 
-    def btn(texto, cmd, secundario=False):
-        b = tk.Button(frame_main, text=texto, command=cmd)
-        if secundario:
-            estilo_botao_secundario(b)
-        else:
-            estilo_botao(b)
-        b.pack(padx=40, pady=4, fill="x")
+        btn_acao("F#", "CIFRA",
+                 lambda: abrir_viewer("Cifra", cifra),
+                 ativo=bool(cifra))
 
-    btn("▶  TOCAR ÁUDIO",          tocar_audio)
-    btn("♩  ABRIR TABLATURA",      abrir_tablatura)
-    btn("≡  VISUALIZAR CIFRA",     abrir_cifra)
-    btn("◉  VISUALIZAR PARTITURA", visualizar_partitura)
+        btn_acao("𝄞",  "TABLATURA",
+                 lambda: abrir_viewer("Tablatura", tablatura),
+                 ativo=bool(tablatura))
 
-    tk.Label(frame_main, text="─" * 36, bg=BG, fg=BG3).pack(pady=(8, 8))
+        btn_acao("◉",  "PARTITURA",
+                 visualizar_partitura,
+                 ativo=bool(partitura))
 
-    btn("✎  EDITAR MÚSICA",          editar,                 secundario=True)
-    btn("＋  ADICIONAR MÚSICA",       abrir_janela_adicionar, secundario=True)
-
-    tk.Label(frame_main, text="", bg=BG).pack(pady=10)
+        btn_acao("▶",  "ÁUDIO",
+                 tocar_audio,
+                 ativo=bool(audio))
 
     janela.mainloop()

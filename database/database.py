@@ -1,17 +1,19 @@
 import sqlite3
+import os
+
+# Caminho absoluto para musicas.db dentro da pasta database/
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "musicas.db")
+
 
 def conectar_banco():
-    #Conecta ao banco de dados SQLite localizado no diretório database/musicas.db
-    conn = sqlite3.connect("database/musicas.db") 
+    conn = sqlite3.connect(DB_PATH)
     return conn
 
 
 def criar_tabela():
-    conn = conectar_banco() # Variavel que usa a conexão conn, para criar um cursor para executar comandos SQL
-    cursor = conn.cursor() # Cria um cursor a partir da conexão com o banco de dados e guarda esse cursor na variável cursor
+    conn = conectar_banco()
+    cursor = conn.cursor()
 
-    # Executa um comando SQL no banco de dados para criar a tabela "musicas"
-    # caso ela ainda não exista
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS musicas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +27,6 @@ def criar_tabela():
         caminho_partitura TEXT
     )
     """)
-    # Salva (confirma) as alterações feitas no banco de dados
+
     conn.commit()
-    # Fecha a conexão com o banco de dados
     conn.close()

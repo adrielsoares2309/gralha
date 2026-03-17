@@ -1,41 +1,19 @@
-import tkinter as tk
+import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from services.music_service import editar_musica, excluir_musica
 import os
 
-BG        = "#000000"
-BG2       = "#111111"
-BG3       = "#222222"
-DESTAQUE  = "#ffffff"
-DEST_HOV  = "#cccccc"
+# ── Paleta (igual à janela principal) ────────────────────
+VERMELHO  = "#e8514a"
+VERM_HOV  = "#c0392b"
 BRANCO    = "#ffffff"
-CINZA     = "#888888"
-PERIGO    = "#555555"
-PERIGO_HOV = "#333333"
-FONTE     = ("Courier New", 10)
-FONTE_T   = ("Courier New", 11, "bold")
-FONTE_TIT = ("Courier New", 16, "bold")
-
-
-def estilo_botao(btn, cor=DESTAQUE, hover=DEST_HOV):
-    btn.config(bg=cor, fg=BG, relief="flat",
-               activebackground=hover, activeforeground=BG,
-               cursor="hand2", font=FONTE_T, bd=0, padx=10, pady=6)
-    btn.bind("<Enter>", lambda e: btn.config(bg=hover))
-    btn.bind("<Leave>", lambda e: btn.config(bg=cor))
-
-
-def estilo_botao_secundario(btn):
-    btn.config(bg=BG3, fg=BRANCO, relief="flat",
-               activebackground="#333333", activeforeground=BRANCO,
-               cursor="hand2", font=FONTE_T, bd=0, padx=10, pady=6)
-    btn.bind("<Enter>", lambda e: btn.config(bg="#333333"))
-    btn.bind("<Leave>", lambda e: btn.config(bg=BG3))
-
-
-def estilo_entrada(entry):
-    entry.config(bg=BG2, fg=BRANCO, insertbackground=BRANCO,
-                 relief="flat", font=FONTE_T, bd=0)
+FUNDO     = "#f0f0eb"
+CARD_BG   = "#ffffff"
+TEXTO     = "#1a1a1a"
+SUBTEXTO  = "#666666"
+CINZA_BD  = "#e0e0e0"
+PERIGO    = "#e8514a"
+PERIGO_HOV = "#c0392b"
 
 
 def abrir_janela_editar(musica, ao_salvar=None):
@@ -45,6 +23,141 @@ def abrir_janela_editar(musica, ao_salvar=None):
     novo_audio     = musica[7] or ""
     nova_partitura = musica[8] or ""
 
+    # ════════════════════════════════════════════════════
+    # JANELA
+    # ════════════════════════════════════════════════════
+    janela = ctk.CTkToplevel()
+    janela.title("Editar Música")
+    janela.geometry("480x720")
+    janela.configure(fg_color=FUNDO)
+    janela.resizable(False, True)
+    janela.grab_set()
+    janela.focus_force()
+
+    # ── Header ───────────────────────────────────────────
+    header = ctk.CTkFrame(janela, fg_color=BRANCO,
+                           corner_radius=0, border_width=0)
+    header.pack(fill="x")
+
+    ctk.CTkLabel(
+        header, text="Editar Música",
+        font=ctk.CTkFont("Segoe UI", 16, "bold"),
+        text_color=TEXTO
+    ).pack(side="left", padx=24, pady=18)
+
+    # ── Área scrollável ───────────────────────────────────
+    scroll = ctk.CTkScrollableFrame(
+        janela, fg_color=FUNDO,
+        corner_radius=0,
+        scrollbar_button_color=CINZA_BD,
+        scrollbar_button_hover_color=SUBTEXTO
+    )
+    scroll.pack(fill="both", expand=True)
+
+    # ── Helpers ───────────────────────────────────────────
+    def secao(pai, titulo):
+        ctk.CTkLabel(
+            pai, text=titulo,
+            font=ctk.CTkFont("Segoe UI", 10, "bold"),
+            text_color=SUBTEXTO, anchor="w"
+        ).pack(anchor="w", padx=24, pady=(16, 4))
+
+    def campo_entrada(pai, valor="", placeholder=""):
+        entry = ctk.CTkEntry(
+            pai,
+            placeholder_text=placeholder,
+            fg_color=BRANCO,
+            border_color=CINZA_BD,
+            border_width=1,
+            text_color=TEXTO,
+            placeholder_text_color=SUBTEXTO,
+            font=ctk.CTkFont("Segoe UI", 12),
+            corner_radius=8,
+            height=40
+        )
+        if valor:
+            entry.insert(0, valor)
+        entry.pack(fill="x", padx=24, pady=(0, 2))
+        return entry
+
+    def campo_texto(pai, conteudo="", altura=6):
+        frame = ctk.CTkFrame(pai, fg_color=BRANCO,
+                              corner_radius=8,
+                              border_width=1, border_color=CINZA_BD)
+        frame.pack(fill="x", padx=24, pady=(0, 2))
+        txt = ctk.CTkTextbox(
+            frame,
+            height=altura * 20,
+            font=ctk.CTkFont("Courier New", 11),
+            fg_color=BRANCO,
+            text_color=TEXTO,
+            corner_radius=8,
+            wrap="none"
+        )
+        if conteudo:
+            txt.insert("1.0", conteudo)
+        txt.pack(fill="both", expand=True, padx=2, pady=2)
+        return txt
+
+    def btn_arquivo(pai, icone, texto, cmd):
+        ctk.CTkButton(
+            pai,
+            text=f"  {icone}   {texto}",
+            command=cmd,
+            fg_color=CINZA_BD, hover_color="#d0d0d0",
+            text_color=TEXTO,
+            font=ctk.CTkFont("Segoe UI", 11, "bold"),
+            corner_radius=8,
+            height=38,
+            anchor="w"
+        ).pack(fill="x", padx=24, pady=(0, 4))
+
+    # ════════════════════════════════════════════════════
+    # CARD DE FORMULÁRIO
+    # ════════════════════════════════════════════════════
+    card = ctk.CTkFrame(scroll, fg_color=CARD_BG,
+                         corner_radius=16,
+                         border_width=1, border_color=CINZA_BD)
+    card.pack(fill="x", padx=16, pady=16)
+
+    secao(card, "NOME  *")
+    entrada_nome = campo_entrada(card, musica[1] or "", "Nome da música")
+
+    secao(card, "ARTISTA  *")
+    entrada_artista = campo_entrada(card, musica[2] or "", "Nome do artista")
+
+    secao(card, "ÁLBUM")
+    entrada_album = campo_entrada(card, musica[3] or "", "Nome do álbum")
+
+    secao(card, "ANO")
+    entrada_ano = campo_entrada(card, str(musica[4]) if musica[4] else "", "Ex: 2024")
+
+    # separador
+    ctk.CTkFrame(card, fg_color=CINZA_BD, height=1,
+                 corner_radius=0).pack(fill="x", padx=24, pady=(16, 0))
+
+    secao(card, "CIFRA  (acordes)")
+    entrada_cifra = campo_texto(card, musica[5] or "", altura=5)
+
+    secao(card, "TABLATURA  (ASCII)")
+    entrada_tablatura = campo_texto(card, musica[6] or "", altura=6)
+
+    # separador
+    ctk.CTkFrame(card, fg_color=CINZA_BD, height=1,
+                 corner_radius=0).pack(fill="x", padx=24, pady=(16, 0))
+
+    # ── Áudio ─────────────────────────────────────────────
+    secao(card, "ÁUDIO")
+
+    nome_audio_atual = os.path.basename(musica[7]) if musica[7] else "Nenhum arquivo selecionado"
+    label_audio = ctk.CTkLabel(
+        card, text=f"▶  {nome_audio_atual}" if musica[7] else nome_audio_atual,
+        font=ctk.CTkFont("Segoe UI", 10),
+        text_color=TEXTO if musica[7] else SUBTEXTO,
+        anchor="w"
+    )
+    label_audio.pack(anchor="w", padx=24, pady=(0, 6))
+
     def selecionar_audio():
         nonlocal novo_audio
         arquivo = filedialog.askopenfilename(
@@ -53,9 +166,24 @@ def abrir_janela_editar(musica, ao_salvar=None):
         )
         if arquivo:
             novo_audio = arquivo
-            label_audio.config(text=f"▶  {os.path.basename(arquivo)}", fg=BRANCO)
+            label_audio.configure(text=f"▶  {os.path.basename(arquivo)}",
+                                   text_color=TEXTO)
         janela.grab_set()
         janela.focus_force()
+
+    btn_arquivo(card, "▶", "TROCAR ÁUDIO", selecionar_audio)
+
+    # ── Partitura ──────────────────────────────────────────
+    secao(card, "PARTITURA  (PDF)")
+
+    nome_part_atual = os.path.basename(musica[8]) if musica[8] else "Nenhum arquivo selecionado"
+    label_partitura = ctk.CTkLabel(
+        card, text=f"◉  {nome_part_atual}" if musica[8] else nome_part_atual,
+        font=ctk.CTkFont("Segoe UI", 10),
+        text_color=TEXTO if musica[8] else SUBTEXTO,
+        anchor="w"
+    )
+    label_partitura.pack(anchor="w", padx=24, pady=(0, 6))
 
     def selecionar_partitura():
         nonlocal nova_partitura
@@ -65,17 +193,26 @@ def abrir_janela_editar(musica, ao_salvar=None):
         )
         if arquivo:
             nova_partitura = arquivo
-            label_partitura.config(text=f"◉  {os.path.basename(arquivo)}", fg=BRANCO)
+            label_partitura.configure(text=f"◉  {os.path.basename(arquivo)}",
+                                       text_color=TEXTO)
         janela.grab_set()
         janela.focus_force()
 
+    btn_arquivo(card, "◉", "TROCAR PARTITURA", selecionar_partitura)
+
+    ctk.CTkFrame(card, fg_color=CINZA_BD, height=1,
+                 corner_radius=0).pack(fill="x", padx=24, pady=(12, 0))
+
+    # ════════════════════════════════════════════════════
+    # SALVAR
+    # ════════════════════════════════════════════════════
     def salvar():
         nome      = entrada_nome.get().strip()
         artista   = entrada_artista.get().strip()
         album     = entrada_album.get().strip()
         ano_str   = entrada_ano.get().strip()
-        cifra     = texto_cifra.get("1.0", "end").strip()
-        tablatura = texto_tablatura.get("1.0", "end").strip()
+        cifra     = entrada_cifra.get("1.0", "end").strip()
+        tablatura = entrada_tablatura.get("1.0", "end").strip()
 
         if not nome or not artista:
             messagebox.showwarning("Atenção", "Nome e Artista são obrigatórios!")
@@ -88,125 +225,44 @@ def abrir_janela_editar(musica, ao_salvar=None):
                 return
             ano = int(ano_str)
 
-        editar_musica(id_musica, nome, artista, album, ano, cifra, tablatura, novo_audio, nova_partitura)
+        editar_musica(id_musica, nome, artista, album, ano, cifra, tablatura,
+                      novo_audio, nova_partitura)
         messagebox.showinfo("Sucesso", f'"{nome}" atualizada com sucesso!')
         if ao_salvar:
             ao_salvar()
         janela.destroy()
 
+    ctk.CTkButton(
+        card,
+        text="✔   SALVAR ALTERAÇÕES",
+        command=salvar,
+        fg_color=VERMELHO, hover_color=VERM_HOV,
+        text_color=BRANCO,
+        font=ctk.CTkFont("Segoe UI", 12, "bold"),
+        corner_radius=10,
+        height=44
+    ).pack(fill="x", padx=24, pady=(16, 8))
+
+    # ════════════════════════════════════════════════════
+    # EXCLUIR
+    # ════════════════════════════════════════════════════
     def excluir():
         nome = entrada_nome.get().strip() or "esta música"
         if messagebox.askyesno("Confirmar exclusão",
-                                f'Tem certeza que deseja excluir "{nome}"?'):
+                               f'Tem certeza que deseja excluir "{nome}"?'):
             excluir_musica(id_musica)
             messagebox.showinfo("Excluído", f'"{nome}" foi excluída.')
             if ao_salvar:
                 ao_salvar()
             janela.destroy()
 
-    # ── Janela com scroll ────────────────────────────────
-    janela = tk.Toplevel()
-    janela.title("Editar Música")
-    janela.geometry("440x600")
-    janela.configure(bg=BG)
-    janela.resizable(False, True)
-    janela.grab_set()
-    janela.focus_force()
-
-    canvas = tk.Canvas(janela, bg=BG, highlightthickness=0)
-    scrollbar = tk.Scrollbar(janela, orient="vertical", command=canvas.yview)
-    canvas.configure(yscrollcommand=scrollbar.set)
-    scrollbar.pack(side="right", fill="y")
-    canvas.pack(side="left", fill="both", expand=True)
-
-    frame = tk.Frame(canvas, bg=BG)
-    frame_id = canvas.create_window((0, 0), window=frame, anchor="nw")
-
-    def atualizar_scroll(event=None):
-        canvas.configure(scrollregion=canvas.bbox("all"))
-        canvas.itemconfig(frame_id, width=canvas.winfo_width())
-
-    frame.bind("<Configure>", atualizar_scroll)
-    canvas.bind("<Configure>", lambda e: canvas.itemconfig(frame_id, width=e.width))
-    canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
-
-    def lbl(texto):
-        tk.Label(frame, text=texto, bg=BG, fg=CINZA,
-                 font=("Courier New", 8, "bold")).pack(anchor="w", padx=40, pady=(10, 2))
-
-    def entrada_campo(valor=""):
-        e = tk.Entry(frame, width=36)
-        estilo_entrada(e)
-        e.insert(0, valor)
-        e.pack(padx=40, ipady=6, fill="x")
-        return e
-
-    tk.Label(frame, text="EDITAR MÚSICA", bg=BG, fg=BRANCO,
-             font=FONTE_TIT).pack(pady=(24, 2))
-    tk.Label(frame, text="─" * 36, bg=BG, fg=BG3).pack(pady=(0, 8))
-
-    lbl("NOME")
-    entrada_nome = entrada_campo(musica[1] or "")
-
-    lbl("ARTISTA")
-    entrada_artista = entrada_campo(musica[2] or "")
-
-    lbl("ÁLBUM")
-    entrada_album = entrada_campo(musica[3] or "")
-
-    lbl("ANO")
-    entrada_ano = entrada_campo(str(musica[4]) if musica[4] else "")
-
-    lbl("CIFRA (acordes)")
-    texto_cifra = tk.Text(frame, height=6, width=36,
-                           font=("Courier New", 10),
-                           bg=BG2, fg=BRANCO, insertbackground=BRANCO,
-                           relief="flat", bd=0, padx=8, pady=8)
-    texto_cifra.insert("1.0", musica[5] or "")
-    texto_cifra.pack(padx=40, fill="x")
-
-    lbl("TABLATURA (ASCII)")
-    texto_tablatura = tk.Text(frame, height=7, width=36,
-                               font=("Courier New", 10),
-                               bg=BG2, fg=BRANCO, insertbackground=BRANCO,
-                               relief="flat", bd=0, padx=8, pady=8)
-    texto_tablatura.insert("1.0", musica[6] or "")
-    texto_tablatura.pack(padx=40, fill="x")
-
-    tk.Label(frame, text="─" * 36, bg=BG, fg=BG3).pack(pady=(12, 6))
-
-    btn_audio = tk.Button(frame, text="♪  TROCAR ÁUDIO", command=selecionar_audio)
-    estilo_botao_secundario(btn_audio)
-    btn_audio.pack(padx=40, pady=(0, 4), fill="x")
-
-    label_audio = tk.Label(
-        frame,
-        text=f"▶  {os.path.basename(musica[7])}" if musica[7] else "Nenhum áudio selecionado",
-        bg=BG, fg=BRANCO if musica[7] else CINZA, font=FONTE
-    )
-    label_audio.pack(padx=40, anchor="w")
-
-    btn_partitura = tk.Button(frame, text="◉  TROCAR PARTITURA", command=selecionar_partitura)
-    estilo_botao_secundario(btn_partitura)
-    btn_partitura.pack(padx=40, pady=(8, 4), fill="x")
-
-    label_partitura = tk.Label(
-        frame,
-        text=f"◉  {os.path.basename(musica[8])}" if musica[8] else "Nenhuma partitura selecionada",
-        bg=BG, fg=BRANCO if musica[8] else CINZA, font=FONTE
-    )
-    label_partitura.pack(padx=40, anchor="w")
-
-    tk.Label(frame, text="─" * 36, bg=BG, fg=BG3).pack(pady=(12, 6))
-
-    btn_salvar = tk.Button(frame, text="✔  SALVAR ALTERAÇÕES", command=salvar)
-    estilo_botao(btn_salvar)
-    btn_salvar.pack(padx=40, pady=(0, 6), fill="x")
-
-    btn_excluir = tk.Button(frame, text="✖  EXCLUIR MÚSICA", command=excluir)
-    btn_excluir.config(bg=PERIGO, fg=BRANCO, relief="flat",
-                       activebackground=PERIGO_HOV, activeforeground=BRANCO,
-                       cursor="hand2", font=FONTE_T, bd=0, padx=10, pady=6)
-    btn_excluir.bind("<Enter>", lambda e: btn_excluir.config(bg=PERIGO_HOV))
-    btn_excluir.bind("<Leave>", lambda e: btn_excluir.config(bg=PERIGO))
-    btn_excluir.pack(padx=40, pady=(0, 30), fill="x")
+    ctk.CTkButton(
+        card,
+        text="🗑   EXCLUIR MÚSICA",
+        command=excluir,
+        fg_color="#cccccc", hover_color="#bbbbbb",
+        text_color=TEXTO,
+        font=ctk.CTkFont("Segoe UI", 12, "bold"),
+        corner_radius=10,
+        height=44
+    ).pack(fill="x", padx=24, pady=(0, 24))

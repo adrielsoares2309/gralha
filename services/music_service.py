@@ -1,9 +1,13 @@
 import sqlite3
+import os
+
+# Aponta para database/musicas.db a partir da raiz do projeto
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "musicas.db")
 
 
 def buscar_musica(nome):
 
-    conn = sqlite3.connect("database/musicas.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -19,7 +23,7 @@ def buscar_musica(nome):
 
 def buscar_musica_completa(nome):
 
-    conn = sqlite3.connect("database/musicas.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -35,7 +39,7 @@ def buscar_musica_completa(nome):
 
 def add_musica(nome, artista, album, ano, cifra, tablatura, audio, partitura):
 
-    conn = sqlite3.connect("database/musicas.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -50,7 +54,7 @@ def add_musica(nome, artista, album, ano, cifra, tablatura, audio, partitura):
 
 def editar_musica(id, nome, artista, album, ano, cifra, tablatura, audio, partitura):
 
-    conn = sqlite3.connect("database/musicas.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -66,7 +70,7 @@ def editar_musica(id, nome, artista, album, ano, cifra, tablatura, audio, partit
 
 def excluir_musica(id):
 
-    conn = sqlite3.connect("database/musicas.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("DELETE FROM musicas WHERE id = ?", (id,))

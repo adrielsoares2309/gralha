@@ -40,10 +40,10 @@ def estilo_entrada(entry):
 
 def abrir_janela_editar(musica, ao_salvar=None):
 
-    # musica = (id, nome, artista, album, ano, tablatura, caminho_audio, caminho_partitura)
+    # musica = (id, nome, artista, album, ano, cifra, tablatura, caminho_audio, caminho_partitura)
     id_musica      = musica[0]
-    novo_audio     = musica[6] or ""
-    nova_partitura = musica[7] or ""
+    novo_audio     = musica[7] or ""
+    nova_partitura = musica[8] or ""
 
     def selecionar_audio():
         nonlocal novo_audio
@@ -74,6 +74,7 @@ def abrir_janela_editar(musica, ao_salvar=None):
         artista   = entrada_artista.get().strip()
         album     = entrada_album.get().strip()
         ano_str   = entrada_ano.get().strip()
+        cifra     = texto_cifra.get("1.0", "end").strip()
         tablatura = texto_tablatura.get("1.0", "end").strip()
 
         if not nome or not artista:
@@ -87,7 +88,7 @@ def abrir_janela_editar(musica, ao_salvar=None):
                 return
             ano = int(ano_str)
 
-        editar_musica(id_musica, nome, artista, album, ano, tablatura, novo_audio, nova_partitura)
+        editar_musica(id_musica, nome, artista, album, ano, cifra, tablatura, novo_audio, nova_partitura)
         messagebox.showinfo("Sucesso", f'"{nome}" atualizada com sucesso!')
         if ao_salvar:
             ao_salvar()
@@ -156,12 +157,20 @@ def abrir_janela_editar(musica, ao_salvar=None):
     lbl("ANO")
     entrada_ano = entrada_campo(str(musica[4]) if musica[4] else "")
 
+    lbl("CIFRA (acordes)")
+    texto_cifra = tk.Text(frame, height=6, width=36,
+                           font=("Courier New", 10),
+                           bg=BG2, fg=BRANCO, insertbackground=BRANCO,
+                           relief="flat", bd=0, padx=8, pady=8)
+    texto_cifra.insert("1.0", musica[5] or "")
+    texto_cifra.pack(padx=40, fill="x")
+
     lbl("TABLATURA (ASCII)")
     texto_tablatura = tk.Text(frame, height=7, width=36,
                                font=("Courier New", 10),
                                bg=BG2, fg=BRANCO, insertbackground=BRANCO,
                                relief="flat", bd=0, padx=8, pady=8)
-    texto_tablatura.insert("1.0", musica[5] or "")
+    texto_tablatura.insert("1.0", musica[6] or "")
     texto_tablatura.pack(padx=40, fill="x")
 
     tk.Label(frame, text="─" * 36, bg=BG, fg=BG3).pack(pady=(12, 6))
@@ -172,8 +181,8 @@ def abrir_janela_editar(musica, ao_salvar=None):
 
     label_audio = tk.Label(
         frame,
-        text=f"▶  {os.path.basename(musica[6])}" if musica[6] else "Nenhum áudio selecionado",
-        bg=BG, fg=BRANCO if musica[6] else CINZA, font=FONTE
+        text=f"▶  {os.path.basename(musica[7])}" if musica[7] else "Nenhum áudio selecionado",
+        bg=BG, fg=BRANCO if musica[7] else CINZA, font=FONTE
     )
     label_audio.pack(padx=40, anchor="w")
 
@@ -183,8 +192,8 @@ def abrir_janela_editar(musica, ao_salvar=None):
 
     label_partitura = tk.Label(
         frame,
-        text=f"◉  {os.path.basename(musica[7])}" if musica[7] else "Nenhuma partitura selecionada",
-        bg=BG, fg=BRANCO if musica[7] else CINZA, font=FONTE
+        text=f"◉  {os.path.basename(musica[8])}" if musica[8] else "Nenhuma partitura selecionada",
+        bg=BG, fg=BRANCO if musica[8] else CINZA, font=FONTE
     )
     label_partitura.pack(padx=40, anchor="w")
 

@@ -18,6 +18,7 @@ FONTE_T   = ("Courier New", 11, "bold")
 FONTE_TIT = ("Courier New", 16, "bold")
 
 tablatura    = ""
+cifra        = ""
 audio        = ""
 partitura    = ""
 musica_atual = None
@@ -44,7 +45,7 @@ def iniciar_interface():
     global tablatura, audio, partitura, musica_atual
 
     def buscar():
-        global tablatura, audio, partitura, musica_atual
+        global tablatura, cifra, audio, partitura, musica_atual
 
         nome = entrada.get()
         resultado = buscar_musica_completa(nome)
@@ -54,7 +55,7 @@ def iniciar_interface():
 
         if resultado:
             musica_atual = resultado
-            _, nome_r, artista, album, ano, tablatura, audio, partitura = resultado
+            _, nome_r, artista, album, ano, cifra, tablatura, audio, partitura = resultado
 
             def info_linha(icone, label, valor):
                 f = tk.Frame(frame_resultado, bg=BG2)
@@ -71,6 +72,16 @@ def iniciar_interface():
             info_linha("★", "ARTISTA", artista)
             info_linha("◈", "ÁLBUM",   album)
             info_linha("◷", "ANO",     str(ano) if ano else "—")
+
+            if cifra:
+                tk.Label(frame_resultado, text="CIFRA", bg=BG2, fg=CINZA,
+                         font=("Courier New", 8, "bold")).pack(anchor="w", padx=16, pady=(10, 2))
+                txt_cifra = tk.Text(frame_resultado, height=6, font=("Courier New", 10),
+                              bg=BG3, fg=BRANCO, relief="flat", bd=0,
+                              padx=10, pady=8, state="normal")
+                txt_cifra.insert("1.0", cifra)
+                txt_cifra.config(state="disabled")
+                txt_cifra.pack(padx=16, fill="x", pady=(0, 4))
 
             if tablatura:
                 tk.Label(frame_resultado, text="TABLATURA", bg=BG2, fg=CINZA,
@@ -98,12 +109,34 @@ def iniciar_interface():
 
         else:
             musica_atual = None
-            tablatura = audio = partitura = ""
+            tablatura = cifra = audio = partitura = ""
             tk.Label(frame_resultado, text="Música não encontrada",
                      bg=BG, fg=CINZA, font=FONTE).pack(pady=10)
 
         canvas.update_idletasks()
         canvas.configure(scrollregion=canvas.bbox("all"))
+
+    def abrir_cifra():
+        if not cifra:
+            return
+        jan = tk.Toplevel(janela)
+        jan.title("Cifra")
+        jan.geometry("460x400")
+        jan.configure(bg=BG)
+        jan.grab_set()
+
+        tk.Label(jan, text="── CIFRA ──", bg=BG, fg=BRANCO,
+                 font=FONTE_TIT).pack(pady=(16, 8))
+
+        frame = tk.Frame(jan, bg=BG2)
+        frame.pack(fill="both", expand=True, padx=16, pady=(0, 16))
+
+        txt = tk.Text(frame, font=("Courier New", 12), bg=BG2, fg=BRANCO,
+                      insertbackground=BRANCO, relief="flat",
+                      state="normal", bd=0, padx=10, pady=10)
+        txt.insert("1.0", cifra)
+        txt.config(state="disabled")
+        txt.pack(fill="both", expand=True)
 
     def abrir_tablatura():
         if not tablatura:
@@ -202,6 +235,7 @@ def iniciar_interface():
 
     btn("▶  TOCAR ÁUDIO",          tocar_audio)
     btn("♩  ABRIR TABLATURA",      abrir_tablatura)
+    btn("≡  VISUALIZAR CIFRA",     abrir_cifra)
     btn("◉  VISUALIZAR PARTITURA", visualizar_partitura)
 
     tk.Label(frame_main, text="─" * 36, bg=BG, fg=BG3).pack(pady=(8, 8))

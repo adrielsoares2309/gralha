@@ -74,6 +74,7 @@ def abrir_janela_adicionar():
         artista   = entrada_artista.get().strip()
         album     = entrada_album.get().strip()
         ano_str   = entrada_ano.get().strip()
+        cifra     = texto_cifra.get("1.0", "end").strip()
         tablatura = texto_tablatura.get("1.0", "end").strip()
 
         if not nome or not artista:
@@ -87,7 +88,7 @@ def abrir_janela_adicionar():
                 return
             ano = int(ano_str)
 
-        add_musica(nome, artista, album, ano, tablatura, caminho_audio, caminho_partitura)
+        add_musica(nome, artista, album, ano, cifra, tablatura, caminho_audio, caminho_partitura)
         messagebox.showinfo("Sucesso", f'"{nome}" salva com sucesso!')
         janela.destroy()
 
@@ -144,6 +145,13 @@ def abrir_janela_adicionar():
 
     lbl("ANO")
     entrada_ano = entrada_campo()
+
+    lbl("CIFRA (acordes)")
+    texto_cifra = tk.Text(frame, height=6, width=36,
+                           font=("Courier New", 10),
+                           bg=BG2, fg=BRANCO, insertbackground=BRANCO,
+                           relief="flat", bd=0, padx=8, pady=8)
+    texto_cifra.pack(padx=40, fill="x")
 
     lbl("TABLATURA (ASCII)")
     exemplo = (

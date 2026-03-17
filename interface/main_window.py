@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from tkinter import messagebox
+from PIL import Image
 import os
 from services.music_service import buscar_musica_completa, excluir_musica
 from interface.add_music_window import abrir_janela_adicionar
@@ -25,6 +26,26 @@ audio        = ""
 partitura    = ""
 musica_atual = None
 
+# ── Caminho base dos ícones ──────────────────────────────
+# Sobe da pasta interface/ até a raiz, depois entra em assets/icons/
+ICONS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "..", "assets", "icons")
+
+
+def carregar_icone(nome_arquivo, tamanho=(20, 20)):
+    """
+    Carrega um PNG de assets/icons/ e retorna um CTkImage.
+    Se o arquivo não existir, retorna None sem quebrar o app.
+    """
+    caminho = os.path.join(ICONS_DIR, nome_arquivo)
+    if not os.path.exists(caminho):
+        return None
+    try:
+        img = Image.open(caminho).convert("RGBA").resize(tamanho, Image.LANCZOS)
+        return ctk.CTkImage(light_image=img, dark_image=img, size=tamanho)
+    except Exception:
+        return None
+
 
 def iniciar_interface():
 
@@ -40,6 +61,17 @@ def iniciar_interface():
     janela.resizable(True, True)
 
     sidebar_visivel = False
+
+    # ── Pré-carrega todos os ícones ──────────────────────
+    # Sidebar
+    ic_add     = carregar_icone("add.png",     (18, 18))
+    ic_edit    = carregar_icone("edit.png",    (18, 18))
+    ic_delete  = carregar_icone("delete.png",  (18, 18))
+    # Card de resultado
+    ic_cifra      = carregar_icone("cifra.png",      (20, 20))
+    ic_tablatura  = carregar_icone("tablatura.png",  (20, 20))
+    ic_partitura  = carregar_icone("partitura.png",  (20, 20))
+    ic_audio      = carregar_icone("audio.png",      (20, 20))
 
     # ════════════════════════════════════════════════════
     # SIDEBAR
@@ -57,10 +89,13 @@ def iniciar_interface():
             text_color=SUBTEXTO
         ).pack(pady=(28, 16), padx=20, anchor="w")
 
-        def btn_sidebar(icone, texto, comando):
+        def btn_sidebar(texto, comando, icone_ctk=None):
+            # Se o ícone existir usa CTkImage, senão usa só texto
             ctk.CTkButton(
                 sidebar,
-                text=f"  {icone}   {texto}",
+                text=f"  {texto}",
+                image=icone_ctk,
+                compound="left",        # ícone à esquerda do texto
                 command=comando,
                 fg_color=VERMELHO, hover_color=VERM_HOV,
                 text_color=BRANCO,
@@ -70,9 +105,9 @@ def iniciar_interface():
                 anchor="w"
             ).pack(fill="x", padx=12, pady=5)
 
-        btn_sidebar("+",  "ADICIONAR", lambda: abrir_janela_adicionar())
-        btn_sidebar("✏", "EDITAR",    lambda: editar())
-        btn_sidebar("🗑", "EXCLUIR",   lambda: excluir())
+        btn_sidebar("ADICIONAR", lambda: abrir_janela_adicionar(), ic_add)
+        btn_sidebar("EDITAR",    lambda: editar(),                  ic_edit)
+        btn_sidebar("EXCLUIR",   lambda: excluir(),                 ic_delete)
 
         return sidebar
 
@@ -298,16 +333,18 @@ def iniciar_interface():
         ctk.CTkFrame(card, fg_color=CINZA_BD, height=1,
                      corner_radius=0).pack(fill="x", padx=24, pady=(12, 8))
 
-        # botões de ação
+        # ── Botões de ação com ícones ──────────────────────
         frame_btns = ctk.CTkFrame(card, fg_color="transparent")
         frame_btns.pack(fill="x", padx=24, pady=(0, 20))
 
-        def btn_acao(icone, texto, cmd, ativo=True):
+        def btn_acao(texto, cmd, icone_ctk=None, ativo=True):
             cor   = VERMELHO if ativo else "#cccccc"
             hover = VERM_HOV if ativo else "#bbbbbb"
             ctk.CTkButton(
                 frame_btns,
-                text=f"  {icone}   {texto}",
+                text=f"  {texto}",
+                image=icone_ctk,
+                compound="left",        # ícone à esquerda do texto
                 command=cmd if ativo else lambda: None,
                 fg_color=cor, hover_color=hover,
                 text_color=BRANCO,
@@ -317,20 +354,24 @@ def iniciar_interface():
                 anchor="w"
             ).pack(fill="x", pady=4)
 
-        btn_acao("F#", "CIFRA",
+        btn_acao("CIFRA",
                  lambda: abrir_viewer("Cifra", cifra),
+                 ic_cifra,
                  ativo=bool(cifra))
 
-        btn_acao("𝄞",  "TABLATURA",
+        btn_acao("TABLATURA",
                  lambda: abrir_viewer("Tablatura", tablatura),
+                 ic_tablatura,
                  ativo=bool(tablatura))
 
-        btn_acao("◉",  "PARTITURA",
+        btn_acao("PARTITURA",
                  visualizar_partitura,
+                 ic_partitura,
                  ativo=bool(partitura))
 
-        btn_acao("▶",  "ÁUDIO",
+        btn_acao("ÁUDIO",
                  tocar_audio,
+                 ic_audio,
                  ativo=bool(audio))
 
     janela.mainloop()

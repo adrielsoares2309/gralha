@@ -10,8 +10,8 @@ from interface.edit_music_window import abrir_janela_editar
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
-VERMELHO   = "#e8514a"
-VERM_HOV   = "#c0392b"
+AZUL       = "#2B5BA8"
+AZUL_HOV   = "#1E4280"
 BRANCO     = "#ffffff"
 FUNDO      = "#f0f0eb"
 CARD_BG    = "#ffffff"
@@ -19,7 +19,7 @@ SIDEBAR_BG = "#ffffff"
 TEXTO      = "#1a1a1a"
 SUBTEXTO   = "#666666"
 CINZA_BD   = "#e0e0e0"
-LINHA_ALT  = "#fafafa"   # cor alternada das linhas da tabela
+LINHA_ALT  = "#fafafa"
 
 cifra        = ""
 tablatura    = ""
@@ -88,7 +88,7 @@ def iniciar_interface():
                 image=icone_ctk,
                 compound="left",
                 command=comando,
-                fg_color=VERMELHO, hover_color=VERM_HOV,
+                fg_color=AZUL, hover_color=AZUL_HOV,
                 text_color=BRANCO,
                 font=ctk.CTkFont("Segoe UI", 12, "bold"),
                 corner_radius=10,
@@ -129,7 +129,7 @@ def iniciar_interface():
         command=toggle_sidebar,
         width=44, height=44,
         corner_radius=10,
-        fg_color=VERMELHO, hover_color=VERM_HOV,
+        fg_color=AZUL, hover_color=AZUL_HOV,
         text_color=BRANCO,
         font=ctk.CTkFont("Segoe UI", 18, "bold")
     ).pack(side="left", padx=(14, 0), pady=10)
@@ -153,7 +153,7 @@ def iniciar_interface():
         height=38
     )
     entrada.pack(side="left", fill="x", expand=True, padx=(14, 4), pady=2)
-    entrada.bind("<Return>",    lambda e: on_busca())
+    entrada.bind("<Return>",     lambda e: on_busca())
     entrada.bind("<KeyRelease>", lambda e: on_busca())
 
     ctk.CTkButton(
@@ -161,7 +161,7 @@ def iniciar_interface():
         command=lambda: on_busca(),
         width=42, height=38,
         corner_radius=20,
-        fg_color=VERMELHO, hover_color=VERM_HOV,
+        fg_color=AZUL, hover_color=AZUL_HOV,
         text_color=BRANCO,
         font=ctk.CTkFont("Segoe UI", 14)
     ).pack(side="right", padx=4, pady=2)
@@ -172,7 +172,6 @@ def iniciar_interface():
     corpo = ctk.CTkFrame(frame_conteudo, fg_color=FUNDO, corner_radius=0)
     corpo.pack(fill="both", expand=True)
 
-    # ── helpers para limpar o corpo ──────────────────────
     def limpar_corpo():
         for w in corpo.winfo_children():
             w.destroy()
@@ -189,15 +188,14 @@ def iniciar_interface():
         if musicas is None:
             musicas = listar_musicas()
 
-        # --- área scrollável (cabeçalho dentro) ---
+        # área scrollável com cabeçalho dentro
         scroll = ctk.CTkScrollableFrame(
             corpo, fg_color=FUNDO, corner_radius=0,
             scrollbar_button_color=CINZA_BD,
             scrollbar_button_hover_color=SUBTEXTO
         )
-        scroll.pack(fill="both", expand=True, padx=0, pady=0)
+        scroll.pack(fill="both", expand=True)
 
-        # cabeçalho fixo no topo do scroll
         cab = ctk.CTkFrame(scroll, fg_color=BRANCO,
                             corner_radius=0, border_width=0)
         cab.pack(fill="x", padx=16, pady=(8, 0))
@@ -227,28 +225,25 @@ def iniciar_interface():
             cor_linha = CARD_BG if i % 2 == 0 else LINHA_ALT
 
             linha = ctk.CTkFrame(scroll, fg_color=cor_linha,
-                                  corner_radius=6,
-                                  border_width=0,
+                                  corner_radius=6, border_width=0,
                                   cursor="hand2")
             linha.pack(fill="x", padx=16, pady=1)
 
             def celula(pai, texto, expand=True, bold=False):
                 ctk.CTkLabel(
                     pai, text=texto or "—",
-                    font=ctk.CTkFont("Segoe UI", 12,
-                                     "bold" if bold else "normal"),
+                    font=ctk.CTkFont("Segoe UI", 12, "bold" if bold else "normal"),
                     text_color=TEXTO if bold else SUBTEXTO,
                     anchor="w"
                 ).pack(side="left", fill="x", expand=expand,
                        padx=(10, 4), pady=8)
 
-            celula(linha, nome_r,          bold=True)
+            celula(linha, nome_r,                    bold=True)
             celula(linha, artista or "—")
             celula(linha, album   or "—")
-            celula(linha, str(ano) if ano else "—", expand=False)
+            celula(linha, str(ano) if ano else "—",  expand=False)
 
-            # hover
-            def _on_enter(e, f=linha): f.configure(fg_color="#fde8e7")
+            def _on_enter(e, f=linha):          f.configure(fg_color="#e8eef8")
             def _on_leave(e, f=linha, c=cor_linha): f.configure(fg_color=c)
             linha.bind("<Enter>", _on_enter)
             linha.bind("<Leave>", _on_leave)
@@ -256,15 +251,15 @@ def iniciar_interface():
                 filho.bind("<Enter>", _on_enter)
                 filho.bind("<Leave>", _on_leave)
 
-            # clique abre o card de detalhes da música
-            def _selecionar(e=None, musica=m):
+            # clique abre o card de detalhes
+            def _abrir(e=None, musica=m):
                 mostrar_card(musica)
-            linha.bind("<Button-1>", _selecionar)
+            linha.bind("<Button-1>", _abrir)
             for filho in linha.winfo_children():
-                filho.bind("<Button-1>", _selecionar)
+                filho.bind("<Button-1>", _abrir)
 
     # ════════════════════════════════════════════════════
-    # ESTADO 2 — CARD DE DETALHES (resultado da busca)
+    # ESTADO 2 — CARD DE DETALHES
     # ════════════════════════════════════════════════════
     def mostrar_card(resultado):
         global musica_atual, cifra, tablatura, audio, partitura
@@ -286,7 +281,6 @@ def iniciar_interface():
                              border_width=1, border_color=CINZA_BD)
         card.pack(padx=24, pady=20, fill="x")
 
-        # cabeçalho
         cab = ctk.CTkFrame(card, fg_color="transparent")
         cab.pack(fill="x", padx=24, pady=(20, 6))
 
@@ -319,8 +313,8 @@ def iniciar_interface():
         frame_btns.pack(fill="x", padx=24, pady=(0, 20))
 
         def btn_acao(texto, cmd, icone_ctk=None, ativo=True):
-            cor   = VERMELHO if ativo else "#cccccc"
-            hover = VERM_HOV if ativo else "#bbbbbb"
+            cor   = AZUL if ativo else "#cccccc"
+            hover = AZUL_HOV if ativo else "#bbbbbb"
             ctk.CTkButton(
                 frame_btns,
                 text=f"  {texto}",
@@ -377,10 +371,8 @@ def iniciar_interface():
         if not resultados:
             mostrar_nao_encontrado()
         elif len(resultados) == 1:
-            # resultado único → abre direto o card
             mostrar_card(resultados[0])
         else:
-            # múltiplos resultados → mostra lista filtrada
             mostrar_lista(musicas=resultados)
 
     # ════════════════════════════════════════════════════
@@ -445,20 +437,20 @@ def iniciar_interface():
         txt.configure(state="disabled")
 
     def tocar_audio():
-        if audio:
-            caminho = os.path.join(os.path.dirname(__file__), "..", audio)
-            if os.path.exists(caminho):
-                os.startfile(caminho)
-            else:
-                messagebox.showwarning("Aviso", "Arquivo de áudio não encontrado.")
+        if not audio:
+            return
+        if os.path.exists(audio):
+            os.startfile(audio)
+        else:
+            messagebox.showwarning("Aviso", f"Arquivo de áudio não encontrado:\n{audio}")
 
     def visualizar_partitura():
-        if partitura:
-            caminho = os.path.join(os.path.dirname(__file__), "..", partitura)
-            if os.path.exists(caminho):
-                os.startfile(caminho)
-            else:
-                messagebox.showwarning("Aviso", "Arquivo de partitura não encontrado.")
+        if not partitura:
+            return
+        if os.path.exists(partitura):
+            os.startfile(partitura)
+        else:
+            messagebox.showwarning("Aviso", f"Arquivo de partitura não encontrado:\n{partitura}")
 
     # ── Inicia com a lista ────────────────────────────────
     mostrar_lista()

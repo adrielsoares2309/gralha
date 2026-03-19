@@ -1,110 +1,109 @@
-# 🎸 Guitar Library
+# 🐦 Gralha
 
-Aplicação desktop desenvolvida em Python para organizar uma biblioteca pessoal de músicas, tablaturas e partituras.
-
-O objetivo do projeto é permitir que o usuário pesquise músicas rapidamente e tenha acesso aos arquivos relacionados, como áudio, tablaturas e partituras, tudo em um único lugar.
+> Biblioteca de músicas para guitarristas — tenha cifras, tablaturas, partituras e áudios sempre à mão.
 
 ---
 
-## 🚀 Tecnologias utilizadas
+## 🎯 Objetivo
 
-* Python
-* SQLite
-* Tkinter
-* Git
+Gralha nasceu da necessidade de ter um acervo musical organizado em um único lugar. O software permite cadastrar músicas com todas as informações relevantes para um guitarrista — cifra, tablatura, partitura e áudio — e acessá-las de forma rápida e intuitiva.
 
----
-
-## 📂 Estrutura do Projeto
-
-```
-guitar-library
-│
-├── main.py
-│
-├── database/
-│   ├── database.py
-│   └── musicas.db
-│
-├── interface/
-│   ├── main_window.py
-│   └── add_music_window.py
-│
-├── services/
-│   └── music_service.py
-│
-├── library/
-│   ├── audio/
-│   ├── tabs/
-│   └── scores/
-│
-├── docs/
-│
-├── README.md
-└── .gitignore
-```
+O nome é uma homenagem à **gralha-azul**, ave símbolo do Paraná conhecida por enterrar o pinhão e nunca esquecer onde plantou. Assim como você nunca vai perder suas músicas.
 
 ---
 
-## ⚙️ Funcionalidades
+## ✨ Funcionalidades
 
-* Buscar músicas cadastradas
-* Abrir tablaturas
-* Reproduzir áudio das músicas
-* Abrir partituras em PDF
-* Adicionar novas músicas à biblioteca
-* Organizar arquivos locais de música
-
----
-
-## 🧠 Como funciona
-
-O sistema utiliza um banco de dados local SQLite para armazenar informações das músicas, como:
-
-* nome
-* artista
-* álbum
-* caminho da tablatura
-* caminho do áudio
-* caminho da partitura
-
-Os arquivos reais ficam armazenados nas pastas da biblioteca e o banco guarda apenas o caminho desses arquivos.
+- 🎵 Cadastro de músicas com nome, artista, álbum e ano
+- 🎸 Armazenamento e visualização de cifras e tablaturas
+- 📄 Vinculação de partituras em PDF
+- 🔊 Vinculação de arquivos de áudio (MP3, WAV)
+- 🔍 Busca inteligente em tempo real por nome, artista ou álbum
+- 📋 Listagem completa do acervo em ordem alfabética
+- ✏️ Edição e exclusão de músicas cadastradas
+- 📂 Menu lateral retrátil
 
 ---
 
-## ▶️ Como executar o projeto
+## 🖥️ Interface
 
-1. Clone o repositório
+### Tela inicial
+![Tela inicial](images/screenshot1.png)
 
+### Menu lateral
+![Menu lateral](images/screenshot2.png)
+
+---
+
+## 🛠️ Tecnologias
+
+| Tecnologia | Uso |
+|---|---|
+| Python 3.12 | Linguagem principal |
+| CustomTkinter | Interface gráfica moderna |
+| SQLite3 | Banco de dados local |
+| Pillow | Carregamento de ícones e imagens |
+
+---
+
+## 🚀 Como instalar e rodar
+
+### Opção 1 — Executável (recomendado)
+
+1. Acesse a página de [Releases](../../releases)
+2. Baixe o arquivo `Gralha.exe`
+3. Execute — nenhuma instalação necessária
+
+> ⚠️ Na primeira execução o Windows pode exibir um aviso de segurança. Clique em **"Mais informações" → "Executar assim mesmo"** para continuar.
+
+---
+
+### Opção 2 — Rodar pelo código fonte
+
+**Pré-requisitos:** Python 3.12+
+
+**1. Clone o repositório**
+```bash
+git clone https://github.com/seu-usuario/gralha.git
+cd gralha
 ```
-git clone https://github.com/adrielsoares2309/guitar-library.git
+
+**2. Crie e ative o ambiente virtual**
+```bash
+python -m venv .venv
+.venv\Scripts\activate
 ```
 
-2. Entre na pasta do projeto
-
+**3. Instale as dependências**
+```bash
+pip install customtkinter pillow
 ```
-cd guitar-library
-```
 
-3. Execute o programa
-
-```
+**4. Rode o programa**
+```bash
 python main.py
 ```
 
 ---
 
-## 📌 Objetivo do projeto
+## 📁 Estrutura do projeto
 
-Este projeto foi desenvolvido com fins de estudo, com foco em:
-
-* organização de projetos em Python
-* desenvolvimento de interfaces gráficas
-* uso de banco de dados local
-* versionamento com Git
+```
+gralha/
+├── assets/
+│   ├── icons/          # ícones dos botões
+│   └── logo.png        # logo do software
+├── database/
+│   └── musicas.db      # banco de dados SQLite
+├── interface/
+│   ├── main_window.py
+│   ├── add_music_window.py
+│   └── edit_music_window.py
+├── services/
+│   └── music_service.py
+└── main.py
+```
 
 ---
 
-## 📜 Licença
-
-Projeto de uso educacional.
+*Desenvolvido com 🎸 e Python*

@@ -28,10 +28,10 @@ O nome é uma homenagem à **gralha-azul**, ave símbolo do Paraná conhecida po
 ## 🖥️ Interface
 
 ### Tela inicial
-![Tela inicial](images/screenshot1.png)
+![Tela inicial](images/tela_principal.png)
 
 ### Menu lateral
-![Menu lateral](images/screenshot2.png)
+![Menu lateral](images/sidebar.png)
 
 ---
 

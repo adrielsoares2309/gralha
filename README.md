@@ -94,6 +94,7 @@ gralha/
 │   ├── icons/          # ícones dos botões
 │   └── logo.png        # logo do software
 ├── database/
+│   └── database.py
 │   └── musicas.db      # banco de dados SQLite
 ├── interface/
 │   ├── main_window.py

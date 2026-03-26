@@ -1,7 +1,10 @@
-import customtkinter as ctk
-from tkinter import filedialog, messagebox
+#mporta a biblioteca de interface moderna baseada no Tkinter
+import customtkinter as ctk 
+#importa as funções filedialog → abrir seletor de arquivos (explorer) e messagebox → mostrar pop-ups (alerta, sucesso, erro)
+from tkinter import filedialog, messagebox 
+#Importa a função que salva a música no banco
 from services.music_service import add_musica
-import os
+import os #Usado pra manipular arquivos e caminhos
 
 # ── Paleta ───────────────────────────────────────────────
 AZUL      = "#2B5BA8"
@@ -13,26 +16,28 @@ TEXTO     = "#1a1a1a"
 SUBTEXTO  = "#666666"
 CINZA_BD  = "#e0e0e0"
 
+#Guardam o caminho dos arquivos selecionados
 caminho_audio     = ""
 caminho_partitura = ""
 
 
 def abrir_janela_adicionar():
 
-    global caminho_audio, caminho_partitura
+    #Permite alterar as variáveis globais dentro da função
+    global caminho_audio, caminho_partitura 
     caminho_audio     = ""
     caminho_partitura = ""
 
     # ════════════════════════════════════════════════════
     # JANELA
     # ════════════════════════════════════════════════════
-    janela = ctk.CTkToplevel()
-    janela.title("Adicionar Música")
-    janela.geometry("480x680")
-    janela.configure(fg_color=FUNDO)
-    janela.resizable(False, True)
-    janela.grab_set()
-    janela.focus_force()
+    janela = ctk.CTkToplevel() #cria uma nova janela
+    janela.title("Adicionar Música") #define o titulo
+    janela.geometry("480x680") #Tamanho da janela
+    janela.configure(fg_color=FUNDO) #define a cor de fundo da janela
+    janela.resizable(False, True) #Não permite mudar largura, mas permite altura
+    janela.grab_set() #Bloqueia interação com outras janelas
+    janela.focus_force() #Força foco na janela
 
     # ── Header ───────────────────────────────────────────
     header = ctk.CTkFrame(janela, fg_color=BRANCO, corner_radius=0)

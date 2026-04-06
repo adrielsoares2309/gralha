@@ -3,6 +3,7 @@ import webbrowser
 import customtkinter as ctk
 from tkinter import messagebox
 
+from core.playlist.playlist_search_manager import PlaylistSearchManager
 from services.music_service import listar_musicas
 from services.playlist_service import (
     add_music_to_playlist,
@@ -32,6 +33,15 @@ class PlaylistWindow(ctk.CTkToplevel):
         self.playlist = None
         self.musica_atual = None
         self.side_panel_visivel = False
+        self.search_manager = PlaylistSearchManager()
+        self.search_after_id = None
+        self.search_text = ""
+        self.music_rows = []
+        self.search_entry = None
+        self.clear_search_button = None
+        self.music_scroll = None
+        self.empty_playlist_label = None
+        self.no_results_label = None
 
         self.title("Playlist")
         self.geometry("860x560")
@@ -118,6 +128,9 @@ class PlaylistWindow(ctk.CTkToplevel):
 
         self.title_label.configure(text=self.playlist.nome.upper())
         self.info_label.configure(text=f"{len(self.playlist.musicas)} musica(s)")
+        self.search_manager.set_musicas(self.playlist.musicas)
+        if not self.playlist.musicas:
+            self.search_text = ""
         self.render_music_list()
         self.render_side_panel()
 
@@ -137,30 +150,90 @@ class PlaylistWindow(ctk.CTkToplevel):
         for widget in self.list_area.winfo_children():
             widget.destroy()
 
-        scroll = ctk.CTkScrollableFrame(
+        frame_busca = ctk.CTkFrame(
+            self.list_area,
+            fg_color=BRANCO,
+            corner_radius=16,
+            border_width=1,
+            border_color=CINZA_BD,
+        )
+        frame_busca.pack(fill="x", padx=8, pady=(0, 8))
+
+        self.search_entry = ctk.CTkEntry(
+            frame_busca,
+            placeholder_text="Buscar nesta playlist...",
+            border_width=0,
+            fg_color=BRANCO,
+            text_color=TEXTO,
+            placeholder_text_color=SUBTEXTO,
+            font=ctk.CTkFont("Segoe UI", 12),
+            corner_radius=16,
+            height=38,
+        )
+        self.search_entry.pack(side="left", fill="x", expand=True, padx=(14, 4), pady=2)
+        self.search_entry.bind("<KeyRelease>", self.schedule_search)
+        self.search_entry.bind("<Return>", self.apply_search)
+
+        self.clear_search_button = ctk.CTkButton(
+            frame_busca,
+            text="X",
+            command=self.clear_search,
+            width=32,
+            height=32,
+            corner_radius=10,
+            fg_color=FUNDO,
+            hover_color=CINZA_BD,
+            text_color=SUBTEXTO,
+            font=ctk.CTkFont("Segoe UI", 11, "bold"),
+        )
+        self.clear_search_button.pack(side="right", padx=(4, 8), pady=5)
+
+        if self.search_text:
+            self.search_entry.insert(0, self.search_text)
+
+        self.music_scroll = ctk.CTkScrollableFrame(
             self.list_area,
             fg_color=FUNDO,
             corner_radius=0,
             scrollbar_button_color=CINZA_BD,
             scrollbar_button_hover_color=SUBTEXTO,
         )
-        scroll.pack(fill="both", expand=True)
+        self.music_scroll.pack(fill="both", expand=True)
+
+        self.empty_playlist_label = ctk.CTkLabel(
+            self.music_scroll,
+            text="Nenhuma musica na playlist ainda.\nUse o botao + para adicionar.",
+            font=ctk.CTkFont("Segoe UI", 12),
+            text_color=SUBTEXTO,
+            justify="center",
+        )
+
+        self.no_results_label = ctk.CTkLabel(
+            self.music_scroll,
+            text="No songs found",
+            font=ctk.CTkFont("Segoe UI", 12),
+            text_color=SUBTEXTO,
+            justify="center",
+        )
+
+        self.music_rows = []
 
         if not self.playlist.musicas:
-            ctk.CTkLabel(
-                scroll,
-                text="Nenhuma musica na playlist ainda.\nUse o botao + para adicionar.",
-                font=ctk.CTkFont("Segoe UI", 12),
-                text_color=SUBTEXTO,
-                justify="center",
-            ).pack(pady=40)
+            self.search_entry.configure(state="disabled")
+            self.clear_search_button.configure(state="disabled")
+            self.empty_playlist_label.pack(pady=40)
             return
 
         for index, musica in enumerate(self.playlist.musicas):
             cor_linha = CARD_BG if index % 2 == 0 else LINHA_ALT
             selecionada = self.musica_atual and self.musica_atual.id == musica.id
+            row_state = {
+                "musica": musica,
+                "base_color": cor_linha,
+                "visible": True,
+            }
             linha = ctk.CTkFrame(
-                scroll,
+                self.music_scroll,
                 fg_color=cor_linha,
                 corner_radius=10,
                 border_width=1 if selecionada else 0,
@@ -191,15 +264,18 @@ class PlaylistWindow(ctk.CTkToplevel):
 
             def selecionar(event=None, item=musica):
                 self.musica_atual = item
-                self.render_music_list()
+                self.update_music_row_styles()
                 self.render_music_detail()
 
             def on_enter(event, frame=linha, item=musica):
                 if not self.musica_atual or self.musica_atual.id != item.id:
                     frame.configure(fg_color="#e8eef8")
 
-            def on_leave(event, frame=linha, cor=cor_linha, item=musica):
-                frame.configure(fg_color=cor, border_width=1 if self.musica_atual and self.musica_atual.id == item.id else 0)
+            def on_leave(event, frame=linha, state=row_state, item=musica):
+                frame.configure(
+                    fg_color=state["base_color"],
+                    border_width=1 if self.musica_atual and self.musica_atual.id == item.id else 0,
+                )
 
             linha.bind("<Button-1>", selecionar)
             linha.bind("<Enter>", on_enter)
@@ -208,6 +284,100 @@ class PlaylistWindow(ctk.CTkToplevel):
                 child.bind("<Button-1>", selecionar)
                 child.bind("<Enter>", on_enter)
                 child.bind("<Leave>", on_leave)
+
+            row_state["frame"] = linha
+            self.music_rows.append(row_state)
+
+        self.apply_search()
+
+    def schedule_search(self, event=None):
+        if self.search_after_id:
+            self.after_cancel(self.search_after_id)
+        self.search_after_id = self.after(90, self.apply_search)
+
+    def clear_search(self):
+        if not self.search_entry:
+            return
+        self.search_entry.delete(0, "end")
+        self.search_text = ""
+        self.apply_search()
+
+    def apply_search(self, event=None):
+        if self.search_after_id:
+            self.after_cancel(self.search_after_id)
+            self.search_after_id = None
+
+        if not self.search_entry:
+            return
+
+        self.search_text = self.search_entry.get().strip()
+        resultados = self.search_manager.filter(self.search_text)
+        ids_visiveis = {musica.id for musica in resultados}
+        encontrou_resultados = False
+        indice_visivel = 0
+
+        for item in self.music_rows:
+            frame = item["frame"]
+            visivel = item["musica"].id in ids_visiveis
+
+            if visivel:
+                nova_cor = CARD_BG if indice_visivel % 2 == 0 else LINHA_ALT
+                item["base_color"] = nova_cor
+                frame.configure(fg_color=nova_cor)
+                if not item["visible"]:
+                    frame.pack(fill="x", padx=8, pady=4)
+                item["visible"] = True
+                indice_visivel += 1
+                encontrou_resultados = True
+            else:
+                if item["visible"]:
+                    frame.pack_forget()
+                item["visible"] = False
+
+        self.update_music_row_styles()
+        self.update_search_controls()
+
+        if self.empty_playlist_label:
+            self.empty_playlist_label.pack_forget()
+
+        if self.no_results_label:
+            if self.playlist.musicas and not encontrou_resultados:
+                self.no_results_label.pack(pady=40)
+            else:
+                self.no_results_label.pack_forget()
+
+        musica_visivel = (
+            self.musica_atual is not None
+            and self.musica_atual.id in ids_visiveis
+        )
+        if musica_visivel:
+            if not self.detail_area.winfo_children():
+                self.render_music_detail()
+        else:
+            self.clear_detail()
+
+    def update_search_controls(self):
+        if not self.clear_search_button:
+            return
+
+        possui_texto = bool(self.search_text)
+        self.clear_search_button.configure(
+            state="normal" if possui_texto else "disabled",
+            text_color=TEXTO if possui_texto else SUBTEXTO,
+        )
+
+    def update_music_row_styles(self):
+        for item in self.music_rows:
+            if not item["visible"]:
+                continue
+
+            musica = item["musica"]
+            frame = item["frame"]
+            selecionada = self.musica_atual and self.musica_atual.id == musica.id
+            frame.configure(
+                fg_color=item["base_color"],
+                border_width=1 if selecionada else 0,
+            )
 
     def render_music_detail(self):
         self.clear_detail()

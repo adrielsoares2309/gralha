@@ -1,9 +1,14 @@
+import os
+import queue
+import threading
+
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from urllib.parse import urlparse
-import os
 
+from interface.windows.spotify_search_window import SpotifySearchWindow
 from services.music_service import add_musica
+from services.spotify_service import SpotifyService
 
 AZUL = "#2B5BA8"
 AZUL_HOV = "#1E4280"
@@ -14,28 +19,29 @@ TEXTO = "#1a1a1a"
 SUBTEXTO = "#666666"
 CINZA_BD = "#e0e0e0"
 
-# Variáveis globais para armazenar caminhos dos arquivos
+# Variaveis globais para armazenar caminhos dos arquivos
 caminho_audio = ""
 caminho_partitura = ""
 
 
 def abrir_janela_adicionar():
     global caminho_audio, caminho_partitura
-    # Reseta os caminhos ao abrir a janela
     caminho_audio = ""
     caminho_partitura = ""
 
-    # Cria uma nova janela (popup)
+    spotify_service = SpotifyService()
+    spotify_result_queue = queue.Queue()
+    spotify_job_token = 0
+    spotify_loading = False
+
     janela = ctk.CTkToplevel()
     janela.title("Adicionar Musica")
     janela.geometry("480x720")
     janela.configure(fg_color=FUNDO)
     janela.resizable(False, True)
-    # Bloqueia interação com outras janelas
     janela.grab_set()
     janela.focus_force()
 
-    #Configura o topo da página criada
     header = ctk.CTkFrame(janela, fg_color=BRANCO, corner_radius=0)
     header.pack(fill="x")
     ctk.CTkLabel(
@@ -45,7 +51,6 @@ def abrir_janela_adicionar():
         text_color=TEXTO,
     ).pack(side="left", padx=24, pady=18)
 
-    #Adiciona o scroll na janela
     scroll = ctk.CTkScrollableFrame(
         janela,
         fg_color=FUNDO,
@@ -63,8 +68,7 @@ def abrir_janela_adicionar():
             text_color=SUBTEXTO,
             anchor="w",
         ).pack(anchor="w", padx=24, pady=(16, 4))
-    
-    # Campo de entrada simples (input)
+
     def campo_entrada(pai, placeholder=""):
         entrada = ctk.CTkEntry(
             pai,
@@ -81,7 +85,6 @@ def abrir_janela_adicionar():
         entrada.pack(fill="x", padx=24, pady=(0, 2))
         return entrada
 
-    # Campo de texto grande (para cifra/tablatura)
     def campo_texto(pai, altura=6):
         frame = ctk.CTkFrame(
             pai,
@@ -103,7 +106,6 @@ def abrir_janela_adicionar():
         txt.pack(fill="both", expand=True, padx=2, pady=2)
         return txt
 
-    # Botão para selecionar arquivos
     def btn_arquivo(pai, icone, texto, cmd):
         ctk.CTkButton(
             pai,
@@ -118,14 +120,12 @@ def abrir_janela_adicionar():
             anchor="w",
         ).pack(fill="x", padx=24, pady=(0, 4))
 
-    # Valida a URL
     def url_valida(url):
         if not url:
             return True
         partes = urlparse(url)
         return partes.scheme in {"http", "https"} and bool(partes.netloc)
 
-    # CARD PRINCIPAL (FORMULÁRIO)
     card = ctk.CTkFrame(
         scroll,
         fg_color=CARD_BG,
@@ -135,7 +135,42 @@ def abrir_janela_adicionar():
     )
     card.pack(fill="x", padx=16, pady=16)
 
-    # CAMPOS BÁSICOS
+    secao(card, "BUSCAR MUSICA")
+    frame_busca = ctk.CTkFrame(
+        card,
+        fg_color=BRANCO,
+        corner_radius=8,
+        border_width=1,
+        border_color=CINZA_BD,
+    )
+    frame_busca.pack(fill="x", padx=24, pady=(0, 2))
+
+    entry_musica = ctk.CTkEntry(
+        frame_busca,
+        placeholder_text="Buscar musica no Spotify...",
+        fg_color=BRANCO,
+        border_width=0,
+        text_color=TEXTO,
+        placeholder_text_color=SUBTEXTO,
+        font=ctk.CTkFont("Segoe UI", 12),
+        corner_radius=8,
+        height=38,
+    )
+    entry_musica.pack(side="left", fill="x", expand=True, padx=(12, 4), pady=2)
+
+    btn_buscar = ctk.CTkButton(
+        frame_busca,
+        text="Buscar",
+        fg_color=AZUL,
+        hover_color=AZUL_HOV,
+        text_color=BRANCO,
+        font=ctk.CTkFont("Segoe UI", 11, "bold"),
+        corner_radius=8,
+        width=78,
+        height=32,
+    )
+    btn_buscar.pack(side="right", padx=(4, 6), pady=4)
+
     secao(card, "NOME")
     entrada_nome = campo_entrada(card, "Nome da musica")
 
@@ -148,18 +183,106 @@ def abrir_janela_adicionar():
     secao(card, "ANO")
     entrada_ano = campo_entrada(card, "Ex: 2024")
 
-    # Linha separadora
+    placeholder_busca_padrao = "Buscar musica no Spotify..."
+
+    def preencher_campo(campo, valor):
+        campo.delete(0, "end")
+        if valor:
+            campo.insert(0, valor)
+
+    def preencher_campos_musica(resultado):
+        preencher_campo(entrada_nome, resultado.get("nome", ""))
+        preencher_campo(entrada_artista, resultado.get("artista", ""))
+        preencher_campo(entrada_album, resultado.get("album", ""))
+        preencher_campo(entrada_ano, resultado.get("ano", ""))
+        preencher_campo(entrada_link, resultado.get("link_spotify", ""))
+
+    def atualizar_estado_busca(carregando, feedback=None):
+        nonlocal spotify_loading
+        spotify_loading = carregando
+        entry_musica.configure(
+            state="disabled" if carregando else "normal",
+            placeholder_text=feedback or placeholder_busca_padrao,
+        )
+        btn_buscar.configure(state="disabled" if carregando else "normal")
+
+    def limpar_feedback_busca():
+        if spotify_loading:
+            return
+        entry_musica.configure(placeholder_text=placeholder_busca_padrao)
+
+    def abrir_resultados_spotify(resultados):
+        SpotifySearchWindow(
+            master=janela,
+            resultados=resultados,
+            on_select=preencher_campos_musica,
+        )
+
+    def processar_fila_spotify():
+        if not janela.winfo_exists():
+            return
+
+        try:
+            while True:
+                job_token, termo_original, status, resultados = spotify_result_queue.get_nowait()
+                if job_token != spotify_job_token:
+                    continue
+
+                atualizar_estado_busca(False)
+
+                if entry_musica.get().strip() != termo_original:
+                    limpar_feedback_busca()
+                    continue
+
+                if status == "success":
+                    if len(resultados) == 1:
+                        preencher_campos_musica(resultados[0])
+                    else:
+                        abrir_resultados_spotify(resultados)
+                elif status == "not_found":
+                    messagebox.showinfo("Spotify", "Nenhuma musica encontrada.")
+                else:
+                    messagebox.showwarning("Spotify", "Erro ao buscar musica.")
+
+                limpar_feedback_busca()
+        except queue.Empty:
+            pass
+
+        janela.after(150, processar_fila_spotify)
+
+    def buscar_async(event=None):
+        nonlocal spotify_job_token
+        termo = entry_musica.get().strip()
+        if not termo or spotify_loading:
+            return
+
+        spotify_job_token += 1
+        job_token = spotify_job_token
+        atualizar_estado_busca(True, "Buscando...")
+
+        def worker():
+            try:
+                resultados = spotify_service.buscar_musicas(termo, limit=5)
+                status = "success" if resultados else "not_found"
+                spotify_result_queue.put((job_token, termo, status, resultados))
+            except Exception:
+                spotify_result_queue.put((job_token, termo, "error", []))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    entry_musica.bind("<Return>", buscar_async)
+    btn_buscar.configure(command=buscar_async)
+    janela.after(150, processar_fila_spotify)
+
     ctk.CTkFrame(card, fg_color=CINZA_BD, height=1, corner_radius=0).pack(
         fill="x", padx=24, pady=(16, 0)
     )
-    
-    # CIFRA E TABLATURA
+
     secao(card, "CIFRA  (acordes)")
     entrada_cifra = campo_texto(card, altura=5)
 
     secao(card, "TABLATURA  (ASCII)")
     entrada_tablatura = campo_texto(card, altura=6)
-    # Texto inicial da tablatura
     entrada_tablatura.insert(
         "1.0",
         "E|--0--| (Mi aguda)\n"
@@ -169,12 +292,11 @@ def abrir_janela_adicionar():
         "A|--0--|\n"
         "E|-----| (Mi grave)",
     )
-    
-    # Linha separadora
+
     ctk.CTkFrame(card, fg_color=CINZA_BD, height=1, corner_radius=0).pack(
         fill="x", padx=24, pady=(16, 0)
     )
-    # AUDIO
+
     secao(card, "AUDIO")
     label_audio = ctk.CTkLabel(
         card,
@@ -185,7 +307,6 @@ def abrir_janela_adicionar():
     )
     label_audio.pack(anchor="w", padx=24, pady=(0, 6))
 
-    # Função para selecionar áudio
     def selecionar_audio():
         global caminho_audio
         arquivo = filedialog.askopenfilename(
@@ -201,13 +322,11 @@ def abrir_janela_adicionar():
 
     btn_arquivo(card, ">", "SELECIONAR AUDIO", selecionar_audio)
 
-    # LINK
     secao(card, "LINK EXTERNO")
     entrada_link = campo_entrada(
         card, "https://youtube.com/... ou https://open.spotify.com/..."
     )
 
-    #PARTITURA
     secao(card, "PARTITURA  (PDF)")
     label_partitura = ctk.CTkLabel(
         card,
@@ -218,7 +337,6 @@ def abrir_janela_adicionar():
     )
     label_partitura.pack(anchor="w", padx=24, pady=(0, 6))
 
-    # Função para selecionar PDF
     def selecionar_partitura():
         global caminho_partitura
         arquivo = filedialog.askopenfilename(
@@ -234,12 +352,10 @@ def abrir_janela_adicionar():
 
     btn_arquivo(card, "PDF", "SELECIONAR PARTITURA", selecionar_partitura)
 
-    #Linha separadora
     ctk.CTkFrame(card, fg_color=CINZA_BD, height=1, corner_radius=0).pack(
         fill="x", padx=24, pady=(12, 0)
     )
 
-    # FUNÇÃO DE SALVAR
     def salvar():
         nome = entrada_nome.get().strip()
         artista = entrada_artista.get().strip()
@@ -267,7 +383,6 @@ def abrir_janela_adicionar():
             )
             return
 
-        # Salva no banco
         add_musica(
             nome,
             artista,
@@ -279,16 +394,13 @@ def abrir_janela_adicionar():
             link_externo,
             caminho_partitura,
         )
-        # Feedback para o usuário
         messagebox.showinfo("Sucesso", f'"{nome}" salva com sucesso!')
-        # Fecha a janela
         janela.destroy()
 
-    # Botão final de salvar
     ctk.CTkButton(
         card,
         text="SALVAR MUSICA",
-        command=salvar, # executa a função salvar
+        command=salvar,
         fg_color=AZUL,
         hover_color=AZUL_HOV,
         text_color=BRANCO,

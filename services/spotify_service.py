@@ -1,6 +1,9 @@
 import os
 import time
 
+import requests
+from spotipy.cache_handler import MemoryCacheHandler
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,6 +27,29 @@ class SpotifyService:
         self._client_ttl = 3000  # 50 minutos (token dura 60min, margem de segurança)
         self._cache = {}
         self._cache_ttl = 600  # 10 minutos para cache de buscas
+
+    class _DebugSession(requests.Session):
+        @staticmethod
+        def _redigir_headers(headers):
+            headers_seguros = {}
+            for chave, valor in (headers or {}).items():
+                if chave.lower() == "authorization" and isinstance(valor, str):
+                    tipo, _, _ = valor.partition(" ")
+                    headers_seguros[chave] = f"{tipo} ***" if tipo else "***"
+                else:
+                    headers_seguros[chave] = valor
+            return headers_seguros
+
+        def request(self, method, url, **kwargs):
+            headers = self._redigir_headers(kwargs.get("headers"))
+            print("REQUEST:", method, url)
+            print("HEADERS:", headers)
+
+            response = super().request(method, url, **kwargs)
+
+            print("RESPONSE STATUS:", response.status_code)
+            print("RESPONSE BODY:", response.text)
+            return response
 
     # ------------------------------------------------------------------
     # Busca simples (retorna 1 resultado)
@@ -99,14 +125,29 @@ class SpotifyService:
             return client.search(q=query, type="track", limit=limit)
         except Exception as exc:
             codigo = getattr(exc, "http_status", None)
-            if codigo in (401, 403):
-                print(f"SPOTIFY: token expirado (HTTP {codigo}), renovando...")
+            mensagem = str(exc)
+            if codigo == 401:
+                print(
+                    "SPOTIFY: received HTTP 401; retrying with a fresh client."
+                )
                 self._invalidar_cliente()
                 client = self._get_client()
                 if client is None:
                     raise
                 print("SPOTIFY: token refreshed")
                 return client.search(q=query, type="track", limit=limit)
+            if codigo == 403:
+                if "Active premium subscription required for the owner of the app" in mensagem:
+                    print(
+                        "SPOTIFY: access forbidden by Spotify. "
+                        "The app owner needs an active Premium subscription, and "
+                        "Spotify may take a few hours to re-enable requests after the status changes."
+                    )
+                else:
+                    print(
+                        "SPOTIFY: access forbidden by Spotify. "
+                        "This is likely a permissions, app access, or policy restriction rather than an expired token."
+                    )
             raise
 
     # ------------------------------------------------------------------
@@ -129,12 +170,17 @@ class SpotifyService:
 
         try:
             self._limpar_ambiente_oauth()
+            session = self._DebugSession()
             auth_manager = SpotifyClientCredentials(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
-                cache_handler=None,
+                cache_handler=MemoryCacheHandler(),
+                requests_session=session,
             )
-            self._client = spotipy.Spotify(auth_manager=auth_manager)
+            self._client = spotipy.Spotify(
+                auth_manager=auth_manager,
+                requests_session=session,
+            )
             self._client_criado_em = time.time()
             print("SPOTIFY: client created using ClientCredentials")
             print("SPOTIFY AUTH MANAGER:", type(self._client.auth_manager))
